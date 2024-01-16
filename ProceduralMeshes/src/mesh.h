@@ -5,12 +5,19 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+struct BufferData {
+  struct Vec3 vertices;
+  struct Vec2 uv;
+  struct Vec3 normals;
+  struct Vec4 tangents;
+};
+
 struct Mesh {
-  int length;
-  struct Vec3 *vertices;
-  struct Vec3 *normals;
-  struct Vec4 *tangents;
-  struct Vec2 *uv;
+
+  int bufferDatalength;
+  struct BufferData *bufferData;
+  int *indices;
+  int indicesLength;
 };
 
 void CreateQuadMesh(struct Mesh *mesh);

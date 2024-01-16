@@ -89,7 +89,9 @@ struct Image *LoadTarga(const char *filename) {
   targaData = (unsigned char *)malloc(sizeof(unsigned char) * imageSize);
   bool bit32 = image->bpp == 32;
 
-  for (int idx = 0; idx < image->height * image->width; idx++) {
+  int size = bit32 ? 4 : 3;
+
+  for (int idx = 0; idx < image->height * image->width * size; idx += size) {
     targaData[idx] = targaImage[idx + 2];     // Red
     targaData[idx + 1] = targaImage[idx + 1]; // Green
     targaData[idx + 2] = targaImage[idx];     // Blue
