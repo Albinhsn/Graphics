@@ -1,8 +1,8 @@
-#include <mesh.h>
+#include "mesh.h"
 
 void CreateQuadMesh(struct Mesh *mesh) {
 
-  mesh->length = 4;
+  mesh->length = 3;
   mesh->vertices = (struct Vec3 *)malloc(sizeof(struct Vec3) * mesh->length);
   // zero
   mesh->vertices[0] = (struct Vec3){0.0f, 0.0f, 0.0f};
