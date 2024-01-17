@@ -33,7 +33,7 @@ int main() {
       indexBufferId;
 
   struct Mesh mesh;
-  CreateQuadMesh(&mesh);
+  CreateQuadMesh(&mesh, 1);
 
   window = SDL_CreateWindow("client", 0, 0, screenWidth, screenHeight,
                             SDL_WINDOW_OPENGL);

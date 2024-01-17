@@ -20,6 +20,6 @@ struct Mesh {
   int indicesLength;
 };
 
-void CreateQuadMesh(struct Mesh *mesh);
+void CreateQuadMesh(struct Mesh *mesh, int meshSize);
 
 #endif
