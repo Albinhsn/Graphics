@@ -5,6 +5,14 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+struct BufferData2{
+  struct Vec3 vertices;
+  struct Vec2 uv;
+  struct Vec3 normals;
+  struct Vec4 tangents;
+  float time;
+};
+
 struct BufferData {
   struct Vec3 vertices;
   struct Vec2 uv;
@@ -15,7 +23,7 @@ struct BufferData {
 struct Mesh {
 
   int bufferDatalength;
-  struct BufferData *bufferData;
+  struct BufferData2 *bufferData;
   int *indices;
   int indicesLength;
 };

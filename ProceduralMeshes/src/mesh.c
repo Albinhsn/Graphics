@@ -4,8 +4,8 @@
 void CreateQuadMesh(struct Mesh *mesh, int meshSize) {
 
   mesh->bufferDatalength = 4 * meshSize * meshSize;
-  mesh->bufferData = (struct BufferData *)malloc(sizeof(struct BufferData) *
-                                                 mesh->bufferDatalength);
+  mesh->bufferData = (struct BufferData2 *)malloc(sizeof(struct BufferData2) *
+                                                  mesh->bufferDatalength);
 
   float minX = -0.4f, maxX = 0.4f;
   float minY = -0.8f, maxY = 0.8f;
@@ -27,7 +27,6 @@ void CreateQuadMesh(struct Mesh *mesh, int meshSize) {
     } else {
       y += offsetY;
     }
-    printf("%lf %lf\n", x,y);
     int bufferOffset = meshIdx * 4;
     mesh->bufferData[bufferOffset + 0].vertices = (struct Vec3){x, y, 0.0f};
     mesh->bufferData[bufferOffset + 0].normals =
@@ -35,6 +34,7 @@ void CreateQuadMesh(struct Mesh *mesh, int meshSize) {
     mesh->bufferData[bufferOffset + 0].uv = (struct Vec2){0.0f, 1.0f};
     mesh->bufferData[bufferOffset + 0].tangents =
         (struct Vec4){1.0f, 0.0f, 0.0f, -1.0f};
+    mesh->bufferData[bufferOffset + 0].time = 0.0f;
 
     mesh->bufferData[bufferOffset + 1].vertices =
         (struct Vec3){x + offsetX, y, 0.0f};
@@ -43,6 +43,7 @@ void CreateQuadMesh(struct Mesh *mesh, int meshSize) {
     mesh->bufferData[bufferOffset + 1].uv = (struct Vec2){1.0f, 1.0f};
     mesh->bufferData[bufferOffset + 1].tangents =
         (struct Vec4){1.0f, 0.0f, 0.0f, -1.0f};
+    mesh->bufferData[bufferOffset + 1].time = 0.0f;
 
     mesh->bufferData[bufferOffset + 2].vertices =
         (struct Vec3){x, y + offsetY, 0.0f};
@@ -51,6 +52,7 @@ void CreateQuadMesh(struct Mesh *mesh, int meshSize) {
     mesh->bufferData[bufferOffset + 2].uv = (struct Vec2){0.0f, 0.0f};
     mesh->bufferData[bufferOffset + 2].tangents =
         (struct Vec4){1.0f, 0.0f, 0.0f, -1.0f};
+    mesh->bufferData[bufferOffset + 2].time = 0.0f;
 
     mesh->bufferData[bufferOffset + 3].vertices =
         (struct Vec3){x + offsetX, y + offsetY, 0.0f};
@@ -59,6 +61,7 @@ void CreateQuadMesh(struct Mesh *mesh, int meshSize) {
     mesh->bufferData[bufferOffset + 3].uv = (struct Vec2){1.0f, 0.0f};
     mesh->bufferData[bufferOffset + 3].tangents =
         (struct Vec4){1.0f, 0.0f, 0.0f, -1.0f};
+    mesh->bufferData[bufferOffset + 3].time = 0.0f;
 
     indexIdx = (bufferOffset * 6) / 4;
 

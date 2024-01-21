@@ -6,6 +6,7 @@
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
 #include <stdbool.h>
+#include <sys/time.h>
 
 void initializeTexture(GLuint *textureId) {
   glActiveTexture(GL_TEXTURE);
@@ -37,7 +38,7 @@ int main() {
       indexBufferId;
 
   struct Mesh mesh;
-  int gridSize = 10;
+  int gridSize = 5;
   CreateQuadMesh(&mesh, gridSize);
 
   window = SDL_CreateWindow("client", 0, 0, screenWidth, screenHeight,
@@ -53,6 +54,21 @@ int main() {
   fShader = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(fShader, 1, &constFragmentSource, NULL);
   glCompileShader(fShader);
+  int status;
+  glGetShaderiv(vShader, GL_COMPILE_STATUS, &status);
+  if (status != 1) {
+    int logSize;
+
+    glGetShaderiv(vShader, GL_INFO_LOG_LENGTH, &logSize);
+    logSize++;
+
+    char infoLog[logSize];
+    infoLog[logSize - 1] = '\0';
+
+    glGetShaderInfoLog(vShader, logSize, NULL, infoLog);
+    printf("%s\n", infoLog);
+    return 0;
+  }
 
   glGenVertexArrays(1, &vertexArrayId);
   glBindVertexArray(vertexArrayId);
@@ -60,15 +76,19 @@ int main() {
   glGenBuffers(1, &vertexBufferId);
   glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId);
   glBufferData(GL_ARRAY_BUFFER,
-               mesh.bufferDatalength * sizeof(struct BufferData),
+               mesh.bufferDatalength * sizeof(struct BufferData2),
                mesh.bufferData, GL_STATIC_DRAW);
 
   glEnableVertexAttribArray(0);
   glEnableVertexAttribArray(1);
+  glEnableVertexAttribArray(2);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(struct BufferData), 0);
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct BufferData),
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(struct BufferData2),
+                        0);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct BufferData2),
                         (signed char *)NULL + (3 * sizeof(GLfloat)));
+  glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(struct BufferData2),
+                        (signed char *)NULL + (12 * sizeof(GLfloat)));
 
   glGenBuffers(1, &indexBufferId);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferId);
@@ -81,8 +101,7 @@ int main() {
 
   glBindAttribLocation(program, 0, "inputPosition");
   glBindAttribLocation(program, 1, "inputTexCoord");
-  glBindAttribLocation(program, 2, "inputNormals");
-  glBindAttribLocation(program, 3, "inputTangents");
+  glBindAttribLocation(program, 2, "inputTime");
 
   glBindVertexArray(vertexArrayId);
   glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId);
@@ -96,32 +115,51 @@ int main() {
   GLuint textureId;
   initializeTexture(&textureId);
 
+  struct timeval current_time;
+  long long lastTick = 0;
+  long long thisMilli;
+
+  float counter = 0;
+
   while (running) {
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT || event.key.keysym.sym == SDLK_ESCAPE) {
         running = false;
       }
-
-      glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-      glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
-      glBindTexture(GL_TEXTURE_2D, textureId);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0,
-                   GL_RGBA, GL_UNSIGNED_BYTE, image.data);
-
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                      GL_NEAREST_MIPMAP_NEAREST);
-
-      glGenerateMipmap(GL_TEXTURE_2D);
-
-      glDrawElements(GL_TRIANGLES, mesh.indicesLength, GL_UNSIGNED_INT, 0);
-
-      SDL_GL_SwapWindow(window);
     }
+    gettimeofday(&current_time, NULL);
+    thisMilli = (((long long)current_time.tv_sec) * 1000) +
+                (current_time.tv_usec / 1000);
+
+    if (thisMilli - lastTick > 200) {
+      lastTick = thisMilli;
+      for (int i = 0; i < mesh.bufferDatalength; i++) {
+        mesh.bufferData[i].time = thisMilli % 500;
+      }
+    }
+    glBufferData(GL_ARRAY_BUFFER,
+                 mesh.bufferDatalength * sizeof(struct BufferData2),
+                 mesh.bufferData, GL_STATIC_DRAW);
+
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+    glBindTexture(GL_TEXTURE_2D, textureId);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE, image.data);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                    GL_NEAREST_MIPMAP_NEAREST);
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glDrawElements(GL_TRIANGLES, mesh.indicesLength, GL_UNSIGNED_INT, 0);
+
+    SDL_GL_SwapWindow(window);
   }
 
   SDL_Quit();
