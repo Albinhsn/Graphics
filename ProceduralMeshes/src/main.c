@@ -1,5 +1,6 @@
 #include "files.h"
 #include "mesh.h"
+#include "png.h"
 #include "sdl.h"
 #include "string.h"
 #include <GL/gl.h>
@@ -18,14 +19,17 @@ int main() {
   int screenWidth = 620;
   int screenHeight = 480;
 
-  const char *filename = "./data/base-map.tga";
+  const char *filename = "./data/base-map.png";
 
-  struct Image *image = LoadTarga(filename);
+  struct Image image;
+  parsePNG(&image, filename);
 
-  struct String *vertexSource = ah_ReadFile("shaders/texture.vs");
-  const char *constVertexSource = (const char *)vertexSource->buffer;
-  struct String *fragmentSource = ah_ReadFile("shaders/texture.ps");
-  const char *constFragmentSource = (const char *)fragmentSource->buffer;
+  struct String vertexSource;
+  ah_ReadFile(&vertexSource, "shaders/texture.vs");
+  const char *constVertexSource = (const char *)vertexSource.buffer;
+  struct String fragmentSource;
+  ah_ReadFile(&fragmentSource, "shaders/texture.ps");
+  const char *constFragmentSource = (const char *)fragmentSource.buffer;
 
   SDL_Window *window;
   SDL_GLContext context;
@@ -33,7 +37,8 @@ int main() {
       indexBufferId;
 
   struct Mesh mesh;
-  CreateQuadMesh(&mesh, 1);
+  int gridSize = 10;
+  CreateQuadMesh(&mesh, gridSize);
 
   window = SDL_CreateWindow("client", 0, 0, screenWidth, screenHeight,
                             SDL_WINDOW_OPENGL);
@@ -101,8 +106,8 @@ int main() {
       glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
       glBindTexture(GL_TEXTURE_2D, textureId);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image->width, image->height, 0,
-                   GL_RGB, GL_UNSIGNED_BYTE, image->data);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0,
+                   GL_RGBA, GL_UNSIGNED_BYTE, image.data);
 
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);

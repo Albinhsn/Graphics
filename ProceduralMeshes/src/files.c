@@ -1,9 +1,6 @@
 #include "files.h"
-#include "string.h"
 
-struct String *ah_ReadFile(char *fileName) {
-  struct String *string = (struct String *)malloc(sizeof(struct String));
-
+bool ah_ReadFile(struct String * string, const char *fileName){
   FILE *filePtr;
   long fileSize, count;
   char *buffer;
@@ -18,22 +15,22 @@ struct String *ah_ReadFile(char *fileName) {
   fileSize = ftell(filePtr);
 
   string->len = fileSize;
-  string->buffer = (char *)malloc(sizeof(char) * (fileSize) + 1);
+  string->buffer = (char *)malloc(sizeof(char) * (fileSize + 1));
+  string->buffer[fileSize] = '\0';
   fseek(filePtr, 0, SEEK_SET);
   count = fread(string->buffer, 1, fileSize, filePtr);
   if (count != fileSize) {
     free(string->buffer);
-    return 0;
+    return false;
   }
-  string->buffer[string->len] = '\0';
 
   error = fclose(filePtr);
   if (error != 0) {
     free(string->buffer);
-    return 0;
+    return false;
   }
 
-  return string;
+  return true;
 }
 
 struct Image *LoadTarga(const char *filename) {
@@ -89,9 +86,7 @@ struct Image *LoadTarga(const char *filename) {
   targaData = (unsigned char *)malloc(sizeof(unsigned char) * imageSize);
   bool bit32 = image->bpp == 32;
 
-  int size = bit32 ? 4 : 3;
-
-  for (int idx = 0; idx < image->height * image->width * size; idx += size) {
+  for (int idx = 0; idx < image->height * image->width; idx++) {
     targaData[idx] = targaImage[idx + 2];     // Red
     targaData[idx + 1] = targaImage[idx + 1]; // Green
     targaData[idx + 2] = targaImage[idx];     // Blue

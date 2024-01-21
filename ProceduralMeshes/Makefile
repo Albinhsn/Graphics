@@ -1,7 +1,7 @@
 CC := gcc
 CFLAGS := -O0 -g -std=c11 -Wall 
 TARGET := main 
-LDFLAGS := -lGL -ldl -lSDL2 -lm
+LDFLAGS := -lGL -ldl -lSDL2 -lm -lz
 
 LIBRARIES := -I./include/
 
