@@ -10,10 +10,11 @@ out vec2 texCoord;
 
 void main(void)
 {
- float inputPeriod = 2;
- float inputAmplitude = 0.1;
- float inputSpeed = 0.1;
+  float inputPeriod = 2;
+  float inputAmplitude = 0.1;
+  float inputSpeed = 0.1;
   vec3 inputOrigin = vec3(0.0f, 0.0f, 0.0f);
+
   vec3 p = inputPosition - inputOrigin;
   float d = length(p);
   float f = 2.0 * M_PI * inputPeriod * (d - inputSpeed * inputTime);

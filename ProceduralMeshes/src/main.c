@@ -20,7 +20,7 @@ int main() {
   int screenWidth = 620;
   int screenHeight = 480;
 
-  const char *filename = "./data/base-map.png";
+  const char *filename = "./data/blizzard.png";
 
   struct Image image;
   parsePNG(&image, filename);
@@ -116,8 +116,8 @@ int main() {
   initializeTexture(&textureId);
 
   struct timeval current_time;
-  long long lastTick = 0;
-  long long thisMilli;
+  gettimeofday(&current_time, NULL);
+  long long startTick = current_time.tv_usec;
 
   float counter = 0;
 
@@ -128,14 +128,9 @@ int main() {
       }
     }
     gettimeofday(&current_time, NULL);
-    thisMilli = (((long long)current_time.tv_sec) * 1000) +
-                (current_time.tv_usec / 1000);
+    for (int i = 0; i < mesh.bufferDatalength; i++) {
 
-    if (thisMilli - lastTick > 200) {
-      lastTick = thisMilli;
-      for (int i = 0; i < mesh.bufferDatalength; i++) {
-        mesh.bufferData[i].time = thisMilli % 500;
-      }
+      mesh.bufferData[i].time = (float)(current_time.tv_usec - startTick) / 100000;
     }
     glBufferData(GL_ARRAY_BUFFER,
                  mesh.bufferDatalength * sizeof(struct BufferData2),
