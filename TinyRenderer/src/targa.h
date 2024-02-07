@@ -25,13 +25,13 @@ struct TargaHeader {
 struct TargaImage {
   struct TargaHeader targaHeader;
   ui8 *data;
+  ui16 withInPixels;
 };
 
+void setLine(struct TargaImage * image, ui16 x0, ui16 y0, ui16 x1, ui16 y1, struct Vec4ui8 color);
 bool loadTarga(struct TargaImage *image, const char *filename);
 void saveTarga(struct TargaImage *image, const char *filename);
 void initTargaImage(struct TargaImage *image, ui16 width, ui16 height,
                     ui8 *data);
-
-void setPixel(struct TargaImage *image, ui16 x, ui16 y, struct Vec4ui8 color);
 void debugTargaData(struct TargaImage *image);
 #endif

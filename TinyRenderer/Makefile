@@ -1,14 +1,13 @@
 CC := gcc
-CFLAGS := -O2 -g -std=c11 -Wall -Wno-missing-braces  -I./src/common -I./src/game
+CFLAGS := -g -pg -ggdb -O3 -std=c11 -Wall -Wno-missing-braces
 TARGET := main 
-LDFLAGS := -ldl -lSDL2 -lm -lz -lGL
 
 SRCS = $(wildcard src/*.c)
 OBJS = $(patsubst src/%.c,obj/%.o,$(SRCS))
 
 all: $(TARGET)
 $(TARGET): $(OBJS)
-	$(CC)  -o $@ $^ $(LDFLAGS)
+	$(CC)  -pg -o $@ $^ $(LDFLAGS)
 
 obj/%.o: src/%.c
 	@mkdir -p $(@D)

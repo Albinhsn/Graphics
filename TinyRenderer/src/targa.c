@@ -49,13 +49,64 @@ bool loadTarga(struct TargaImage *image, const char *filename) {
   }
   return true;
 }
-void setPixel(struct TargaImage *image, ui16 x, ui16 y, struct Vec4ui8 color) {
-  i32 rowIdx = y * image->targaHeader.width * 4;
-  i32 colIdx = x * 4;
-  image->data[rowIdx + colIdx + 0] = color.b;
-  image->data[rowIdx + colIdx + 1] = color.g;
-  image->data[rowIdx + colIdx + 2] = color.r;
-  image->data[rowIdx + colIdx + 3] = color.a;
+static inline void setPixel(struct TargaImage *image, ui16 x, ui16 y,
+                            struct Vec4ui8 color) {
+  i32 idxOffset = image->withInPixels + x * 4;
+  image->data[idxOffset + 0] = color.b;
+  image->data[idxOffset + 1] = color.g;
+  image->data[idxOffset + 2] = color.r;
+  image->data[idxOffset + 3] = color.a;
+}
+
+static inline i16 absDiff(i16 x, i16 y) {
+  i16 diff = x - y;
+  return diff < 0 ? -diff : diff;
+}
+
+static inline i16 absi16(i16 x) { return x < 0 ? -x : x; }
+
+void setLine(struct TargaImage *image, ui16 x0, ui16 y0, ui16 x1, ui16 y1,
+             struct Vec4ui8 color) {
+
+  bool steep = absi16(x0 - x1) < absi16(y0 - y1);
+
+  if (steep) {
+    i16 tmp = x0;
+    x0 = y0;
+    y0 = tmp;
+
+    tmp = x1;
+    x1 = y1;
+    y1 = tmp;
+  }
+
+  if (x0 > x1) {
+    i16 tmp = x0;
+    x0 = x1;
+    x1 = tmp;
+
+    tmp = y0;
+    y0 = y1;
+    y1 = tmp;
+  }
+
+  i16 dx = x1 - x0;
+  i16 dy = y1 - y0;
+
+  i16 d = 2 * dy;
+  bool downwards = d < 0;
+  d = downwards ? -d : d;
+
+  i16 derror = 0;
+  i16 y = y0;
+  for (i16 x = x0; x <= x1; x++) {
+    setPixel(image, steep ? y : x, steep ? x : y, color);
+    derror += d;
+    if (derror > dx) {
+      y = downwards ? y - 1 : y + 1;
+      derror -= 2 * dx;
+    }
+  }
 }
 
 void initTargaImage(struct TargaImage *image, ui16 width, ui16 height,
@@ -70,11 +121,12 @@ void initTargaImage(struct TargaImage *image, ui16 width, ui16 height,
 
   for (i32 i = 0; i < width * height * 4; i += 4) {
     data[i + 0] = 0;
-    data[i + 1] = 0xFF;
+    data[i + 1] = 0;
     data[i + 2] = 0;
     data[i + 3] = 0xFF;
   }
 
+  image->withInPixels = image->targaHeader.width * 4;
   image->data = data;
 }
 

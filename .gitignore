@@ -2,3 +2,5 @@ main
 */*.o
 obj/
 output.tga
+gmon.out
+profile.txt
