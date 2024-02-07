@@ -1,15 +1,25 @@
-#ifndef TARGA_H 
-
+#ifndef TARGA_H
 
 #include "common.h"
+#include "vector.h"
 #include <stdbool.h>
 
 struct TargaHeader {
-  ui8 data1[12];
-  ui16 width;
-  ui16 height;
-  ui8 bpp;
-  ui8 data2;
+  union {
+    ui8 header[18];
+    struct {
+      ui8 charactersInIdentificationField;
+      ui8 colorMapType;
+      ui8 imageType;
+      ui8 colorMapSpec[5];
+      ui16 xOrigin;
+      ui16 yOrigin;
+      ui16 width;
+      ui16 height;
+      ui8 imagePixelSize;
+      ui8 imageDescriptor;
+    };
+  };
 };
 
 struct TargaImage {
@@ -19,5 +29,9 @@ struct TargaImage {
 
 bool loadTarga(struct TargaImage *image, const char *filename);
 void saveTarga(struct TargaImage *image, const char *filename);
+void initTargaImage(struct TargaImage *image, ui16 width, ui16 height,
+                    ui8 *data);
 
-#endif 
+void setPixel(struct TargaImage *image, ui16 x, ui16 y, struct Vec4ui8 color);
+void debugTargaData(struct TargaImage *image);
+#endif

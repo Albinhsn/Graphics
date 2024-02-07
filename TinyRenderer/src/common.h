@@ -15,13 +15,13 @@ typedef int16_t i16;
 typedef int i32;
 typedef int64_t i64;
 
-typedef struct Vec4f32;
+typedef struct Vec4ui8;
 
-#define RED ((struct Vec4f32){1.0f, 0.0f, 0.0f, 1.0f})
-#define YELLOW ((struct Vec4f32){1.0f, 1.0f, 0.0f, 1.0f})
-#define GREEN ((struct Vec4f32){0.0f, 1.0f, 0.0f, 1.0f})
-#define CYAN ((struct Vec4f32){0.0f, 1.0f, 1.0f, 1.0f})
-#define PURPLE ((struct Vec4f32){1.0f, 0.0f, 1.0f, 1.0f})
-#define BLUE ((struct Vec4f32){1.0f, 0.0f, 0.0f, 1.0f})
+#define RED ((struct Vec4ui8){255, 0, 0, 255})
+#define YELLOW ((struct Vec4ui8){255, 255, 0, 255})
+#define GREEN ((struct Vec4ui8){0, 255, 0, 255})
+#define CYAN ((struct Vec4ui8){0, 255, 255, 255})
+#define PURPLE ((struct Vec4ui8){255, 0, 255, 255})
+#define BLUE ((struct Vec4ui8){255, 0, 0, 255})
 
 #endif
