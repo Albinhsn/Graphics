@@ -6,6 +6,7 @@
 typedef uint8_t ui8;
 typedef uint16_t ui16;
 typedef uint32_t ui32;
+typedef unsigned long ui64;
 
 typedef float f32;
 typedef double f64;
@@ -16,7 +17,6 @@ typedef int i32;
 typedef int64_t i64;
 
 typedef struct Vec4ui8;
-
 
 #define RED ((struct Vec4ui8){255, 0, 0, 255})
 #define YELLOW ((struct Vec4ui8){255, 255, 0, 255})

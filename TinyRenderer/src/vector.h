@@ -47,6 +47,22 @@ struct Vec4f32 {
   };
 };
 
+struct Vec3ui32{
+  union {
+    ui32 pos[3];
+    struct {
+      ui32 x;
+      ui32 y;
+      ui32 z;
+    };
+    struct {
+      ui32 r;
+      ui32 g;
+      ui32 b;
+    };
+  };
+};
+
 struct Vec3f32 {
   union {
     f32 pos[3];
