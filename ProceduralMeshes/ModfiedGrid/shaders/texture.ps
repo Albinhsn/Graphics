@@ -1,0 +1,30 @@
+#version 400
+
+in vec2 texCoord;
+in vec3 normal;
+in vec3 tangent;
+in vec3 binormal;
+
+out vec4 outputColor;
+
+uniform sampler2D shaderTexture;
+uniform sampler2D normalTexture;
+
+
+void main(void)
+{
+  vec4 textureColor = texture(shaderTexture, texCoord);
+  vec4 bumpMap = texture(normalTexture, texCoord);
+  vec3 bumpNormal;
+
+
+  bumpMap = (bumpMap * 2.0f) - 1.0f;
+
+  bumpNormal = (bumpMap.x * tangent) + (bumpMap.y * binormal) + (bumpMap.z * normal);
+
+  bumpNormal = normalize(bumpNormal);
+
+  outputColor = texture(shaderTexture, texCoord) * vec4(bumpNormal, 1.0f);
+}
+
+
