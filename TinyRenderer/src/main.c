@@ -10,10 +10,15 @@
 
 #define DEPTH                       255
 
+#define UP                          ((struct Vec3f32){0.0f, 1.0f, 0.0f})
+
 int main()
 {
-  ui8 data[WIDTH * HEIGHT * 4];
-  i32 zBuffer[WIDTH * HEIGHT];
+  ui8            data[WIDTH * HEIGHT * 4];
+  i32            zBuffer[WIDTH * HEIGHT];
+  struct Vec3f32 eye    = {1.0f, 1.0f, 3.0f};
+  struct Vec3f32 center = {0.0f, 0.0f, 0.0f};
+
   for (int i = 0; i < WIDTH * HEIGHT; i++)
   {
     zBuffer[i] = INT_MIN;
@@ -25,9 +30,11 @@ int main()
   struct Matrix4x4 viewport;
   buildIdentityMatrix4x4(&viewport);
   buildViewportMatrix4x4(&viewport, WIDTH / 8, HEIGHT / 8, (WIDTH * 3) / 4, (HEIGHT * 3) / 4, DEPTH);
-  projectionMatrix.m[3][2] = -1.0f / 3.0f;
+  projectionMatrix.m[3][2]   = -1.0f / 3.0f;
 
-  struct Image image;
+  struct Matrix4x4 modelView = lookAt(eye, center, UP);
+
+  struct Image     image;
   initImage(&image, WIDTH, HEIGHT, data);
 
   struct Image texture;
@@ -60,9 +67,9 @@ int main()
     struct Vec3f32       n1                 = normals[faceVertex1.normalIdx - 1];
     struct Vec3f32       n2                 = normals[faceVertex2.normalIdx - 1];
 
-    struct Vec3i32       v0Proj             = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, Vec3f32ToMatrix(v0))));
-    struct Vec3i32       v1Proj             = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, Vec3f32ToMatrix(v1))));
-    struct Vec3i32       v2Proj             = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, Vec3f32ToMatrix(v2))));
+    struct Vec3i32       v0Proj             = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, MatMul4x4(modelView, Vec3f32ToMatrix(v0)))));
+    struct Vec3i32       v1Proj             = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, MatMul4x4(modelView, Vec3f32ToMatrix(v1)))));
+    struct Vec3i32       v2Proj             = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, MatMul4x4(modelView, Vec3f32ToMatrix(v2)))));
 
     fillTriangle(&image, &texture, v0Proj, v1Proj, v2Proj, t0, t1, t2, n0, n1, n2, zBuffer);
   }

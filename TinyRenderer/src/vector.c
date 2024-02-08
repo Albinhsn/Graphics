@@ -2,30 +2,55 @@
 #include "common.h"
 #include <math.h>
 
-struct Vec4f32 MatVecMul4x4(struct Matrix4x4 mat, struct Vec4f32 vec) {
+struct Vec4f32 MatVecMul4x4(struct Matrix4x4 mat, struct Vec4f32 vec)
+{
   struct Vec4f32 res = {
-      mat.m[0][0] * vec.x + mat.m[0][1] * vec.y + mat.m[0][2] * vec.z +
-          mat.m[0][3] * vec.w, //
-      mat.m[1][0] * vec.x + mat.m[1][1] * vec.y + mat.m[1][2] * vec.z +
-          mat.m[1][3] * vec.w, //
-      mat.m[2][0] * vec.x + mat.m[2][1] * vec.y + mat.m[2][2] * vec.z +
-          mat.m[2][3] * vec.w, //
-      mat.m[3][0] * vec.x + mat.m[3][1] * vec.y + mat.m[3][2] * vec.z +
-          mat.m[3][3] * vec.w, //
-                               //
+      mat.m[0][0] * vec.x + mat.m[0][1] * vec.y + mat.m[0][2] * vec.z + mat.m[0][3] * vec.w, //
+      mat.m[1][0] * vec.x + mat.m[1][1] * vec.y + mat.m[1][2] * vec.z + mat.m[1][3] * vec.w, //
+      mat.m[2][0] * vec.x + mat.m[2][1] * vec.y + mat.m[2][2] * vec.z + mat.m[2][3] * vec.w, //
+      mat.m[3][0] * vec.x + mat.m[3][1] * vec.y + mat.m[3][2] * vec.z + mat.m[3][3] * vec.w, //
+                                                                                             //
   };
   return res;
 }
-struct Matrix4x4 MatMul4x4(struct Matrix4x4 a, struct Matrix4x4 b) {
-  f32 a00 = a.m[0][0], a01 = a.m[0][1], a02 = a.m[0][2], a03 = a.m[0][3];
-  f32 a10 = a.m[1][0], a11 = a.m[1][1], a12 = a.m[1][2], a13 = a.m[1][3];
-  f32 a20 = a.m[2][0], a21 = a.m[2][1], a22 = a.m[2][2], a23 = a.m[2][3];
-  f32 a30 = a.m[3][0], a31 = a.m[3][1], a32 = a.m[3][2], a33 = a.m[3][3];
 
-  f32 b00 = b.m[0][0], b01 = b.m[0][1], b02 = b.m[0][2], b03 = b.m[0][3];
-  f32 b10 = b.m[1][0], b11 = b.m[1][1], b12 = b.m[1][2], b13 = b.m[1][3];
-  f32 b20 = b.m[2][0], b21 = b.m[2][1], b22 = b.m[2][2], b23 = b.m[2][3];
-  f32 b30 = b.m[3][0], b31 = b.m[3][1], b32 = b.m[3][2], b33 = b.m[3][3];
+struct Matrix4x4 lookAt(struct Vec3f32 eye, struct Vec3f32 center, struct Vec3f32 up)
+{
+
+  struct Vec3f32 z = {eye.x - center.x, eye.y - center.y, eye.z - center.z};
+  normalizeVec3(&z);
+
+  struct Vec3f32 x = crossProduct3D(up, z);
+  normalizeVec3(&x);
+
+  struct Vec3f32 y = crossProduct3D(z, x);
+  normalizeVec3(&y);
+
+  struct Matrix4x4 minV;
+  buildIdentityMatrix4x4(&minV);
+
+  struct Matrix4x4 tr;
+  buildIdentityMatrix4x4(&tr);
+
+  for(i32 i = 0; i< 3;i++){
+    minV.m[0][i] = x.pos[i];
+    minV.m[1][i] = y.pos[i];
+    minV.m[2][i] = z.pos[i];
+    tr.m[i][3] = -eye.pos[i];
+  }
+  return MatMul4x4(minV, tr);
+}
+struct Matrix4x4 MatMul4x4(struct Matrix4x4 a, struct Matrix4x4 b)
+{
+  f32              a00 = a.m[0][0], a01 = a.m[0][1], a02 = a.m[0][2], a03 = a.m[0][3];
+  f32              a10 = a.m[1][0], a11 = a.m[1][1], a12 = a.m[1][2], a13 = a.m[1][3];
+  f32              a20 = a.m[2][0], a21 = a.m[2][1], a22 = a.m[2][2], a23 = a.m[2][3];
+  f32              a30 = a.m[3][0], a31 = a.m[3][1], a32 = a.m[3][2], a33 = a.m[3][3];
+
+  f32              b00 = b.m[0][0], b01 = b.m[0][1], b02 = b.m[0][2], b03 = b.m[0][3];
+  f32              b10 = b.m[1][0], b11 = b.m[1][1], b12 = b.m[1][2], b13 = b.m[1][3];
+  f32              b20 = b.m[2][0], b21 = b.m[2][1], b22 = b.m[2][2], b23 = b.m[2][3];
+  f32              b30 = b.m[3][0], b31 = b.m[3][1], b32 = b.m[3][2], b33 = b.m[3][3];
 
   struct Matrix4x4 m;
   m.m[0][0] = a00 * b00 + a01 * b10 + a02 * b20 + a03 * b30;
@@ -51,7 +76,8 @@ struct Matrix4x4 MatMul4x4(struct Matrix4x4 a, struct Matrix4x4 b) {
   return m;
 }
 
-struct Matrix4x4 Vec3f32ToMatrix(struct Vec3f32 v) {
+struct Matrix4x4 Vec3f32ToMatrix(struct Vec3f32 v)
+{
   struct Matrix4x4 m;
   buildIdentityMatrix4x4(&m);
   m.m[0][0] = v.x;
@@ -62,14 +88,14 @@ struct Matrix4x4 Vec3f32ToMatrix(struct Vec3f32 v) {
   return m;
 }
 
-struct Vec3i32 MatrixToVec3f32(struct Matrix4x4 m) {
-  struct Vec3i32 v = {m.m[0][0] / m.m[3][0], m.m[1][0] / m.m[3][0],
-                      m.m[2][0] / m.m[3][0]};
+struct Vec3i32 MatrixToVec3f32(struct Matrix4x4 m)
+{
+  struct Vec3i32 v = {m.m[0][0] / m.m[3][0], m.m[1][0] / m.m[3][0], m.m[2][0] / m.m[3][0]};
 
   return v;
 }
-void buildViewportMatrix4x4(struct Matrix4x4 *m, i32 x, i32 y, i32 w, i32 h,
-                            i32 depth) {
+void buildViewportMatrix4x4(struct Matrix4x4* m, i32 x, i32 y, i32 w, i32 h, i32 depth)
+{
   m->m[0][3] = x + w / 2.0f;
   m->m[1][3] = y + h / 2.0f;
   m->m[2][3] = depth / 2.0f;
@@ -78,7 +104,8 @@ void buildViewportMatrix4x4(struct Matrix4x4 *m, i32 x, i32 y, i32 w, i32 h,
   m->m[1][1] = h / 2.0f;
   m->m[2][2] = depth / 2.0f;
 }
-void buildIdentityMatrix4x4(struct Matrix4x4 *m) {
+void buildIdentityMatrix4x4(struct Matrix4x4* m)
+{
   m->m[0][0] = 1;
   m->m[0][1] = 0;
   m->m[0][2] = 0;
@@ -100,9 +127,10 @@ void buildIdentityMatrix4x4(struct Matrix4x4 *m) {
   m->m[3][3] = 1;
 }
 
-i32 crossProduct2D(struct Vec2i32 v0, struct Vec2i32 v1, struct Vec2i32 point) {
+i32 crossProduct2D(struct Vec2i32 v0, struct Vec2i32 v1, struct Vec2i32 point)
+{
   struct Vec2i32 v0v1 = {v1.x - v0.x, v1.y - v0.y};
-  struct Vec2i32 v0p = {point.x - v0.x, point.y - v0.y};
+  struct Vec2i32 v0p  = {point.x - v0.x, point.y - v0.y};
 
   return v0v1.x * v0p.y - v0v1.y * v0p.x;
 }
@@ -126,7 +154,8 @@ i32 crossProduct2D(struct Vec2i32 v0, struct Vec2i32 v1, struct Vec2i32 point) {
 //   return b;
 // }
 
-struct Vec3f32 vectorSubtraction(struct Vec3f32 a, struct Vec3f32 b) {
+struct Vec3f32 vectorSubtraction(struct Vec3f32 a, struct Vec3f32 b)
+{
   struct Vec3f32 res = {
       a.x - b.x, //
       a.y - b.y, //
@@ -136,18 +165,21 @@ struct Vec3f32 vectorSubtraction(struct Vec3f32 a, struct Vec3f32 b) {
   return res;
 }
 
-void normalizeVec3(struct Vec3f32 *v) {
+void normalizeVec3(struct Vec3f32* v)
+{
   f32 len = sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
   v->x /= len;
   v->y /= len;
   v->z /= len;
 }
 
-f32 dotProductVec3(struct Vec3f32 a, struct Vec3f32 b) {
+f32 dotProductVec3(struct Vec3f32 a, struct Vec3f32 b)
+{
   return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-struct Vec3f32 crossProduct3D(struct Vec3f32 a, struct Vec3f32 b) {
+struct Vec3f32 crossProduct3D(struct Vec3f32 a, struct Vec3f32 b)
+{
   struct Vec3f32 res = {
       a.y * b.z - a.z * b.y, //
       a.z * b.x - a.x * b.z, //
