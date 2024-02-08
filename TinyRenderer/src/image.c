@@ -91,20 +91,22 @@ void debugImageData(struct Image *image) {
   }
 }
 
-void fillTriangle(struct Image *image, struct Vec3f32 v0, struct Vec3f32 v1,
-                  struct Vec3f32 v2, struct Vec4ui8 c0, struct Vec4ui8 c1,
-                  struct Vec4ui8 c2, f32 *zBuffer) {
-  struct Vec2f32 v0i32 = CREATE_VEC2f32(VIEWSPACE_TO_WORLDSPACEX(v0.x),
+void fillTriangle(struct Image *image, struct Image *texture, struct Vec3f32 v0,
+                  struct Vec3f32 v1, struct Vec3f32 v2, struct Vec2f32 uv0,
+                  struct Vec2f32 uv1, struct Vec2f32 uv2, f32 *zBuffer) {
+  struct Vec2i32 v0i32 = CREATE_VEC2i32(VIEWSPACE_TO_WORLDSPACEX(v0.x),
                                         VIEWSPACE_TO_WORLDSPACEY(v0.y));
-  struct Vec2f32 v1i32 = CREATE_VEC2f32(VIEWSPACE_TO_WORLDSPACEX(v1.x),
+  struct Vec2i32 v1i32 = CREATE_VEC2i32(VIEWSPACE_TO_WORLDSPACEX(v1.x),
                                         VIEWSPACE_TO_WORLDSPACEY(v1.y));
-  struct Vec2f32 v2i32 = CREATE_VEC2f32(VIEWSPACE_TO_WORLDSPACEX(v2.x),
+  struct Vec2i32 v2i32 = CREATE_VEC2i32(VIEWSPACE_TO_WORLDSPACEX(v2.x),
                                         VIEWSPACE_TO_WORLDSPACEY(v2.y));
+
   i32 xMin = MIN(MIN(v0i32.x, v1i32.x), v2i32.x);
   i32 yMin = MIN(MIN(v0i32.y, v1i32.y), v2i32.y);
 
   i32 xMax = MAX(MAX(v0i32.x, v1i32.x), v2i32.x);
   i32 yMax = MAX(MAX(v0i32.y, v1i32.y), v2i32.y);
+
 
   i32 totalArea = crossProduct2D(CREATE_VEC2i32(v0i32.x, v0i32.y),
                                  CREATE_VEC2i32(v1i32.x, v1i32.y),
@@ -114,12 +116,9 @@ void fillTriangle(struct Image *image, struct Vec3f32 v0, struct Vec3f32 v1,
     for (i32 y = yMin; y < yMax; y++) {
       struct Vec2i32 point = {x, y};
 
-      i32 w0 = crossProduct2D(CREATE_VEC2i32(v1i32.x, v1i32.y),
-                              CREATE_VEC2i32(v2i32.x, v2i32.y), point);
-      i32 w1 = crossProduct2D(CREATE_VEC2i32(v2i32.x, v2i32.y),
-                              CREATE_VEC2i32(v0i32.x, v0i32.y), point);
-      i32 w2 = crossProduct2D(CREATE_VEC2i32(v0i32.x, v0i32.y),
-                              CREATE_VEC2i32(v1i32.x, v1i32.y), point);
+      i32 w0 = crossProduct2D(v1i32, v2i32, point);
+      i32 w1 = crossProduct2D(v2i32, v0i32, point);
+      i32 w2 = crossProduct2D(v0i32, v1i32, point);
 
       f32 alpha = w0 / (f32)totalArea;
       f32 beta = w1 / (f32)totalArea;
@@ -131,12 +130,19 @@ void fillTriangle(struct Image *image, struct Vec3f32 v0, struct Vec3f32 v1,
 
       if (inside && zBuffer[y * image->width + x] < z) {
         zBuffer[y * image->width + x] = z;
-        struct Vec4ui8 color = {
-            alpha * c0.x + beta * c1.x + gamma * c2.x, //
-            alpha * c0.y + beta * c1.y + gamma * c2.y, //
-            alpha * c0.z + beta * c1.z + gamma * c2.z, //
-            255,                                       //
-        };
+        f32 u = (alpha * uv0.x + beta * uv1.x + gamma * uv2.x);
+        f32 v = (alpha * uv0.y + beta * uv1.y + gamma * uv2.y);
+
+        i32 tu = u * texture->width;
+        i32 tv = v * texture->height;
+        i32 tIdx = (i32)(tu + tv * texture->width) * 4;
+
+        struct Vec4ui8 color = {texture->data[tIdx + 2],
+                                texture->data[tIdx + 1],
+                                texture->data[tIdx + 0], 255};
+
+        // printf("%d %d %d\n", color.x, color.y, color.z);
+        // printf("%d\n", tIdx % 4);
         setPixel(image, x, y, color);
       }
     }
