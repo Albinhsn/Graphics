@@ -18,6 +18,9 @@ typedef int64_t i64;
 
 typedef struct Vec4ui8;
 
+#define MIN(x, y) (x < y ? x : y)
+#define MAX(x, y) (x < y ? y : x)
+
 #define RED ((struct Vec4ui8){255, 0, 0, 255})
 #define YELLOW ((struct Vec4ui8){255, 255, 0, 255})
 #define GREEN ((struct Vec4ui8){0, 255, 0, 255})
@@ -25,5 +28,7 @@ typedef struct Vec4ui8;
 #define PURPLE ((struct Vec4ui8){255, 0, 255, 255})
 #define BLUE ((struct Vec4ui8){255, 0, 0, 255})
 #define WHITE ((struct Vec4ui8){255, 255, 255, 255})
+#define BLACK ((struct Vec4ui8){0, 0, 0, 255})
+#define PINK ((struct Vec4ui8){255, 192, 203, 255})
 
 #endif

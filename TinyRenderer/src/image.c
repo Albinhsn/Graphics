@@ -1,6 +1,6 @@
 #include "image.h"
-#include <stdbool.h>
 #include "vector.h"
+#include <stdbool.h>
 #include <stdio.h>
 
 static inline void setPixel(struct Image *image, ui16 x, ui16 y,
@@ -87,5 +87,31 @@ void debugImageData(struct Image *image) {
              image->data[y * pixelRowLength + x + 3]);
     }
     printf("|\n");
+  }
+}
+
+
+void fillTriangle(struct Image *image, struct Vec2i32 v0, struct Vec2i32 v1,
+                  struct Vec2i32 v2, struct Vec4ui8 color) {
+  i32 xMin = MIN(MIN(v0.x, v1.x), v2.x);
+  i32 yMin = MIN(MIN(v0.y, v1.y), v2.y);
+
+  i32 xMax = MAX(MAX(v0.x, v1.x), v2.x);
+  i32 yMax = MAX(MAX(v0.y, v1.y), v2.y);
+
+  for (i32 x = xMin; x < xMax; x++) {
+    for (i32 y = yMin; y < yMax; y++) {
+      struct Vec2i32 point = {x, y};
+
+      i32 w0 = crossProduct2D(v1, v2, point);
+      i32 w1 = crossProduct2D(v2, v0, point);
+      i32 w2 = crossProduct2D(v0, v1, point);
+
+      bool inside = w0 >= 0 && w1 >= 0 && w2 >= 0;
+
+      if (inside) {
+        setPixel(image, x, y, color);
+      }
+    }
   }
 }
