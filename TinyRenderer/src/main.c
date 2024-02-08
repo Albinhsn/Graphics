@@ -2,7 +2,9 @@
 #include "files.h"
 #include "image.h"
 #include "vector.h"
+#include <float.h>
 #include <limits.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -17,8 +19,10 @@
 int main() {
   struct Vec3i32 lightDir = {0, 0, -1};
   ui8 data[WIDTH * HEIGHT * 4];
-  i32 zBuffer[WIDTH * HEIGHT];
-  memset(&zBuffer[0], INT_MIN, WIDTH * HEIGHT);
+  f32 zBuffer[WIDTH * HEIGHT];
+  for (int i = 0; i < WIDTH * HEIGHT; i++) {
+    zBuffer[i] = -FLT_MAX;
+  }
 
   struct Image image;
   initImage(&image, WIDTH, HEIGHT, data);
@@ -31,19 +35,12 @@ int main() {
 
   for (i32 i = 0; i < obj.faceCount; i++) {
     struct WavefrontFace face = obj.faces[i];
-    struct Vec4f32 v0 = obj.vertices[face.verticesData[0].vertexIdx - 1];
-    struct Vec4f32 v1 = obj.vertices[face.verticesData[1].vertexIdx - 1];
-    struct Vec4f32 v2 = obj.vertices[face.verticesData[2].vertexIdx - 1];
-
-    struct Vec3i32 v0i32 = CREATE_VEC3i32(VIEWSPACE_TO_WORLDSPACEX(v0.x),
-                                          VIEWSPACE_TO_WORLDSPACEY(v0.y),
-                                          VIEWSPACE_TO_WORLDSPACEY(v0.z));
-    struct Vec3i32 v1i32 = CREATE_VEC3i32(VIEWSPACE_TO_WORLDSPACEX(v1.x),
-                                          VIEWSPACE_TO_WORLDSPACEY(v1.y),
-                                          VIEWSPACE_TO_WORLDSPACEY(v1.z));
-    struct Vec3i32 v2i32 = CREATE_VEC3i32(VIEWSPACE_TO_WORLDSPACEX(v2.x),
-                                          VIEWSPACE_TO_WORLDSPACEY(v2.y),
-                                          VIEWSPACE_TO_WORLDSPACEY(v2.z));
+    struct Vec3f32 v0 =
+        CAST_TO_VEC3(obj.vertices[face.verticesData[0].vertexIdx - 1]);
+    struct Vec3f32 v1 =
+        CAST_TO_VEC3(obj.vertices[face.verticesData[1].vertexIdx - 1]);
+    struct Vec3f32 v2 =
+        CAST_TO_VEC3(obj.vertices[face.verticesData[2].vertexIdx - 1]);
 
     struct Vec3f32 normal =
         crossProduct3D(vectorSubtraction(CREATE_VEC3f32(v2.x, v2.y, v2.z),
@@ -56,8 +53,7 @@ int main() {
     struct Vec4ui8 color = {(ui8)(255.0 * intensity), (ui8)(255.0 * intensity),
                             (ui8)(255.0 * intensity), 255};
     if (intensity > 0) {
-
-      fillTriangle(&image, v0i32, v1i32, v2i32, color, zBuffer);
+      fillTriangle(&image, v0, v1, v2, color, zBuffer);
     }
   }
 
