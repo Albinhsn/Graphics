@@ -47,7 +47,7 @@ struct Vec4f32 {
   };
 };
 
-struct Vec3ui32{
+struct Vec3ui32 {
   union {
     ui32 pos[3];
     struct {
@@ -136,6 +136,17 @@ struct Vec2ui8 {
   };
 };
 
+struct Matrix4x4 {
+  f32 m[4][4];
+};
+
+void buildIdentityMatrix4x4(struct Matrix4x4 *m);
+void buildViewportMatrix4x4(struct Matrix4x4 *m, i32 x, i32 y, i32 w, i32 h,
+                            i32 depth);
+struct Matrix4x4 MatMul4x4(struct Matrix4x4 m1, struct Matrix4x4 m2);
+struct Matrix4x4 Vec3f32ToMatrix(struct Vec3f32 v);
+struct Vec3i32 MatrixToVec3f32(struct Matrix4x4 m);
+struct Vec4f32 MatVecMul4x4(struct Matrix4x4 mat, struct Vec4f32 vec);
 i32 crossProduct2D(struct Vec2i32 v0, struct Vec2i32 v1, struct Vec2i32 point);
 struct Vec3f32 crossProduct3D(struct Vec3f32 a, struct Vec3f32 b);
 i32 crossProduct3DVector(struct Vec3i32 a, struct Vec3i32 b, struct Vec3i32 p);
@@ -144,4 +155,6 @@ void normalizeVec3(struct Vec3f32 *v);
 f32 dotProductVec3(struct Vec3f32 a, struct Vec3f32 b);
 struct Vec3f32 barycentric3D(struct Vec2f32 v0, struct Vec2f32 v1,
                              struct Vec2f32 v2, struct Vec2f32 point);
+
+struct Vec4f32 matMul(struct Vec4f32 a, struct Vec4f32 b);
 #endif
