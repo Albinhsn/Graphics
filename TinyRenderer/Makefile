@@ -17,6 +17,8 @@ obj/%.o: src/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+len:
+	find . -name '*.c' | xargs wc -l
 
 clean:
 	rm -rf obj/ $(TARGET)

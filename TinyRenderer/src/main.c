@@ -3,6 +3,7 @@
 #include "image.h"
 #include "vector.h"
 #include <limits.h>
+#include <stdio.h>
 
 #define VIEWSPACE_TO_WORLDSPACEY(x) (((x) + 1.0f) * (HEIGHT / 2.0f))
 #define VIEWSPACE_TO_WORLDSPACEX(x) (((x) + 1.0f) * (WIDTH / 2.0f))
@@ -11,9 +12,8 @@
 
 int main()
 {
-  struct Vec3i32 lightDir = {0, 0, -1};
-  ui8            data[WIDTH * HEIGHT * 4];
-  i32            zBuffer[WIDTH * HEIGHT];
+  ui8 data[WIDTH * HEIGHT * 4];
+  i32 zBuffer[WIDTH * HEIGHT];
   for (int i = 0; i < WIDTH * HEIGHT; i++)
   {
     zBuffer[i] = INT_MIN;
@@ -41,6 +41,7 @@ int main()
   {
     struct Vec4f32*      vertices           = obj.vertices;
     struct Vec3f32*      textureCoordinates = obj.textureCoordinates;
+    struct Vec3f32*      normals            = obj.normals;
     struct WavefrontFace face               = obj.faces[i];
 
     struct VertexData    faceVertex0        = face.verticesData[0];
@@ -55,19 +56,15 @@ int main()
     struct Vec2f32       t1                 = CAST_VEC3f32_TO_VEC2f32(textureCoordinates[faceVertex1.textureIdx - 1]);
     struct Vec2f32       t2                 = CAST_VEC3f32_TO_VEC2f32(textureCoordinates[faceVertex2.textureIdx - 1]);
 
-    struct Vec3f32       normal             = crossProduct3D(vectorSubtraction(v2, v0), vectorSubtraction(v1, v0));
-    normalizeVec3(&normal);
+    struct Vec3f32       n0                 = normals[faceVertex0.normalIdx - 1];
+    struct Vec3f32       n1                 = normals[faceVertex1.normalIdx - 1];
+    struct Vec3f32       n2                 = normals[faceVertex2.normalIdx - 1];
 
-    f32 intensity = dotProductVec3(normal, CREATE_VEC3f32(lightDir.x, lightDir.y, lightDir.z));
+    struct Vec3i32       v0Proj             = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, Vec3f32ToMatrix(v0))));
+    struct Vec3i32       v1Proj             = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, Vec3f32ToMatrix(v1))));
+    struct Vec3i32       v2Proj             = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, Vec3f32ToMatrix(v2))));
 
-    if (intensity > 0)
-    {
-      struct Vec3i32 v0Proj = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, Vec3f32ToMatrix(v0))));
-      struct Vec3i32 v1Proj = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, Vec3f32ToMatrix(v1))));
-      struct Vec3i32 v2Proj = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, Vec3f32ToMatrix(v2))));
-
-      fillTriangle(&image, &texture, v0Proj, v1Proj, v2Proj, t0, t1, t2, zBuffer);
-    }
+    fillTriangle(&image, &texture, v0Proj, v1Proj, v2Proj, t0, t1, t2, n0, n1, n2, zBuffer);
   }
 
   saveTarga(&image, "output.tga");
