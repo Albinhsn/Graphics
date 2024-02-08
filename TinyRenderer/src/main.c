@@ -18,9 +18,9 @@ int main() {
     struct WavefrontFace face = obj.faces[i];
 
     for (i32 j = 0; j < 3; j++) {
-      struct Vec4f32 v0 = obj.vertices[face.verticesData[j].vertexIdx + 1];
+      struct Vec4f32 v0 = obj.vertices[face.verticesData[j].vertexIdx - 1];
       struct Vec4f32 v1 =
-          obj.vertices[face.verticesData[(j + 1) % 3].vertexIdx];
+          obj.vertices[face.verticesData[(j + 1) % 3].vertexIdx - 1];
       int x0 = (v0.x + 1.0f) * (WIDTH / 2.0f);
       int y0 = (v0.y + 1.0f) * (HEIGHT / 2.0f);
 
