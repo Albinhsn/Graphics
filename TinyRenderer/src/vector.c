@@ -1,11 +1,17 @@
 #include "vector.h"
 #include "common.h"
 #include <math.h>
-#include <stdio.h>
 
 i32 crossProduct2D(struct Vec2i32 point, struct Vec2i32 v0, struct Vec2i32 v1) {
   struct Vec2i32 v0v1 = {v1.x - v0.x, v1.y - v0.y};
   struct Vec2i32 v0p = {point.x - v0.x, point.y - v0.y};
+
+  return v0v1.x * v0p.y - v0v1.y * v0p.x;
+}
+
+i32 barycentric3D(struct Vec3i32 point, struct Vec3i32 v0, struct Vec3i32 v1) {
+  struct Vec3i32 v0v1 = {v1.x - v0.x, v1.y - v0.y, v1.z - v0.z};
+  struct Vec3i32 v0p = {point.x - v0.x, point.y - v0.y, point.z - v0.z};
 
   return v0v1.x * v0p.y - v0v1.y * v0p.x;
 }

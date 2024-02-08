@@ -17,9 +17,18 @@ typedef int i32;
 typedef int64_t i64;
 
 typedef struct Vec4ui8;
+typedef struct Vec3f32;
 
 #define MIN(x, y) (x < y ? x : y)
 #define MAX(x, y) (x < y ? y : x)
+
+#define WIDTH 1000
+#define HEIGHT 1000
+
+#define VIEWSPACE_TO_WORLDSPACEY(x) (((x) + 1.0f) * (HEIGHT / 2.0f))
+#define VIEWSPACE_TO_WORLDSPACEX(x) (((x) + 1.0f) * (WIDTH / 2.0f))
+
+#define CAST_TO_VEC3(v) ((struct Vec3f32){v.x, v.y, v.z})
 
 #define RED ((struct Vec4ui8){255, 0, 0, 255})
 #define YELLOW ((struct Vec4ui8){255, 255, 0, 255})

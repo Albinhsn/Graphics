@@ -129,6 +129,7 @@ struct Vec2ui8 {
 i32 crossProduct2D(struct Vec2i32 point, struct Vec2i32 v0,
                                  struct Vec2i32 v1);
 struct Vec3f32 crossProduct3D(struct Vec3f32 a, struct Vec3f32 b);
+i32 crossProduct3DVector(struct Vec3i32 a, struct Vec3i32 b, struct Vec3i32 p);
 struct Vec3f32 vectorSubtraction(struct Vec3f32 a, struct Vec3f32 b);
 void normalizeVec3(struct Vec3f32 *v);
 f32 dotProductVec3(struct Vec3f32 a, struct Vec3f32 b);

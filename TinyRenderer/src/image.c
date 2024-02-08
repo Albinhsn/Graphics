@@ -91,8 +91,8 @@ void debugImageData(struct Image *image) {
 }
 
 
-void fillTriangle(struct Image *image, struct Vec2i32 v0, struct Vec2i32 v1,
-                  struct Vec2i32 v2, struct Vec4ui8 color) {
+void fillTriangle(struct Image *image, struct Vec3i32 v0, struct Vec3i32 v1,
+                  struct Vec3i32 v2, struct Vec4ui8 color, i32 * zBuffer) {
   i32 xMin = MIN(MIN(v0.x, v1.x), v2.x);
   i32 yMin = MIN(MIN(v0.y, v1.y), v2.y);
 
@@ -103,14 +103,19 @@ void fillTriangle(struct Image *image, struct Vec2i32 v0, struct Vec2i32 v1,
     for (i32 y = yMin; y < yMax; y++) {
       struct Vec2i32 point = {x, y};
 
-      i32 w0 = crossProduct2D(v1, v2, point);
-      i32 w1 = crossProduct2D(v2, v0, point);
-      i32 w2 = crossProduct2D(v0, v1, point);
+      i32 w0 = crossProduct2D(CREATE_VEC2i32(v1.x, v1.y), CREATE_VEC2i32(v2.x, v2.y), point);
+      i32 w1 = crossProduct2D(CREATE_VEC2i32(v2.x, v2.y), CREATE_VEC2i32(v0.x, v0.y), point);
+      i32 w2 = crossProduct2D(CREATE_VEC2i32(v0.x, v0.y), CREATE_VEC2i32(v1.x, v1.y), point);
 
       bool inside = w0 >= 0 && w1 >= 0 && w2 >= 0;
 
-      if (inside) {
+      i32 z = w0 * v2.z + w1 * v0.z + w2 * v1.z;
+
+      if (inside && zBuffer[y * image->width + x] < z) {
+        zBuffer[y * image->width + x] = z;
         setPixel(image, x, y, color);
+      }else if(inside){
+        setPixel(image, x, y, RED);
       }
     }
   }

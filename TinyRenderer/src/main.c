@@ -2,7 +2,9 @@
 #include "files.h"
 #include "image.h"
 #include "vector.h"
+#include <limits.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define WIDTH 1000
 #define HEIGHT 1000
@@ -15,6 +17,9 @@
 int main() {
   struct Vec3i32 lightDir = {0, 0, -1};
   ui8 data[WIDTH * HEIGHT * 4];
+  i32 zBuffer[WIDTH * HEIGHT];
+  memset(&zBuffer[0], INT_MIN, WIDTH * HEIGHT);
+
   struct Image image;
   initImage(&image, WIDTH, HEIGHT, data);
 
@@ -30,12 +35,15 @@ int main() {
     struct Vec4f32 v1 = obj.vertices[face.verticesData[1].vertexIdx - 1];
     struct Vec4f32 v2 = obj.vertices[face.verticesData[2].vertexIdx - 1];
 
-    struct Vec2i32 v0i32 = CREATE_VEC2i32(VIEWSPACE_TO_WORLDSPACEX(v0.x),
-                                          VIEWSPACE_TO_WORLDSPACEY(v0.y));
-    struct Vec2i32 v1i32 = CREATE_VEC2i32(VIEWSPACE_TO_WORLDSPACEX(v1.x),
-                                          VIEWSPACE_TO_WORLDSPACEY(v1.y));
-    struct Vec2i32 v2i32 = CREATE_VEC2i32(VIEWSPACE_TO_WORLDSPACEX(v2.x),
-                                          VIEWSPACE_TO_WORLDSPACEY(v2.y));
+    struct Vec3i32 v0i32 = CREATE_VEC3i32(VIEWSPACE_TO_WORLDSPACEX(v0.x),
+                                          VIEWSPACE_TO_WORLDSPACEY(v0.y),
+                                          VIEWSPACE_TO_WORLDSPACEY(v0.z));
+    struct Vec3i32 v1i32 = CREATE_VEC3i32(VIEWSPACE_TO_WORLDSPACEX(v1.x),
+                                          VIEWSPACE_TO_WORLDSPACEY(v1.y),
+                                          VIEWSPACE_TO_WORLDSPACEY(v1.z));
+    struct Vec3i32 v2i32 = CREATE_VEC3i32(VIEWSPACE_TO_WORLDSPACEX(v2.x),
+                                          VIEWSPACE_TO_WORLDSPACEY(v2.y),
+                                          VIEWSPACE_TO_WORLDSPACEY(v2.z));
 
     struct Vec3f32 normal =
         crossProduct3D(vectorSubtraction(CREATE_VEC3f32(v2.x, v2.y, v2.z),
@@ -49,7 +57,7 @@ int main() {
                             (ui8)(255.0 * intensity), 255};
     if (intensity > 0) {
 
-      fillTriangle(&image, v0i32, v1i32, v2i32, color);
+      fillTriangle(&image, v0i32, v1i32, v2i32, color, zBuffer);
     }
   }
 
