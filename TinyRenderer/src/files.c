@@ -1,10 +1,18 @@
 #include "files.h"
 #include "image.h"
+#include "vector.h"
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+static void debugTargaHeader(struct TargaHeader header) {
+  for (int i = 0; i < 18; i++) {
+    printf("%d ", header.header[i]);
+  }
+  printf("\n");
+}
 
 bool loadTarga(struct Image *image, const char *filename) {
 
@@ -26,27 +34,87 @@ bool loadTarga(struct Image *image, const char *filename) {
     printf("ERROR: Failed to read into header\n");
     return false;
   }
+  debugTargaHeader(header);
 
   if (header.imagePixelSize == 32) {
     imageSize = header.width * header.height * 4;
+    printf("32 bpp\n");
   } else if (header.imagePixelSize == 24) {
-    imageSize = header.width * header.height * 3;
+    imageSize = header.width * header.height * 4;
+    printf("24 bpp\n");
   } else {
     printf("Dont't know how to parse targa image with bpp of '%d'\n",
            header.imagePixelSize);
     exit(2);
   }
+  ui8 bpp = 4;
 
   // Allocate memory for the targa image data.
   image->data = (ui8 *)malloc(sizeof(ui8) * imageSize);
+  for (i32 i = 0; i < 0; i++) {
+    image->data[i] = 0;
+  }
   image->width = header.width;
   image->height = header.height;
 
-  // Read in the targa image data.
-  count = fread(image->data, 1, imageSize, filePtr);
-  if (count != imageSize) {
-    printf("ERROR: count read doesn't equal imageSize\n");
-    return false;
+  if (header.imageType == 2) {
+    // Read in the targa image data.
+    count = fread(image->data, 1, imageSize, filePtr);
+    if (count != imageSize) {
+      printf("ERROR: count read doesn't equal imageSize %ld %ld\n", count,
+             imageSize);
+      return false;
+    }
+  } else if (header.imageType == 10) {
+    i32 imageIndex = 0;
+    ui8 byte;
+    i32 counter = 0;
+    while (imageIndex < imageSize) {
+      fread(&byte, 1, sizeof(ui8), filePtr);
+
+      ui8 *curr = &image->data[imageIndex];
+      if (curr[0] != 0) {
+        printf("Overwrite at %d\n", imageIndex);
+      }
+      if (byte >= 128) {
+        ui8 repeated = byte - 127;
+
+        struct Vec3ui8 color;
+        fread(&color, 1, sizeof(struct Vec3ui8), filePtr);
+        // printf("%d %d %d %d\n", color.x, color.y, color.z, 255);
+
+        for (i32 j = 0; j < repeated; j++) {
+          curr[j * bpp + 0] = color.x;
+          curr[j * bpp + 1] = color.y;
+          curr[j * bpp + 2] = color.z;
+          curr[j * bpp + 3] = 255;
+        }
+        imageIndex += repeated * bpp;
+
+      } else {
+        ui8 repeated = byte + 1;
+
+        for (i32 j = 0; j < repeated; j++) {
+          struct Vec3ui8 color;
+          fread(&color, 1, sizeof(struct Vec3ui8), filePtr);
+          // printf("%d %d %d %d\n", color.x, color.y, color.z, 255);
+
+          curr[j * bpp + 0] = color.x;
+          curr[j * bpp + 1] = color.y;
+          curr[j * bpp + 2] = color.z;
+          curr[j * bpp + 3] = 255;
+        }
+        imageIndex += repeated * bpp;
+      }
+      counter++;
+      if (counter >= 100) {
+        // exit(1);
+      }
+    }
+  }
+
+  if (header.imagePixelSize == 24) {
+    // Do stuff
   }
 
   if (fclose(filePtr) != 0) {
@@ -242,16 +310,15 @@ static void parseWavefrontFace(struct WavefrontObject *obj, const char *line) {
         parseIntFromString(&line[curr], &step);
     curr += step;
     curr++;
-    face->verticesData[face->vertexCount - 1].normalIdx =
+    face->verticesData[face->vertexCount - 1].textureIdx =
         parseIntFromString(&line[curr], &step);
     curr += step;
     curr++;
-    face->verticesData[face->vertexCount - 1].textureIdx =
+    face->verticesData[face->vertexCount - 1].normalIdx =
         parseIntFromString(&line[curr], &step);
 
     curr += step + skipWhitespace(&line[curr]);
     curr++;
-
   }
 }
 

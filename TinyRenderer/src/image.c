@@ -2,6 +2,7 @@
 #include "vector.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 static inline void setPixel(struct Image *image, ui16 x, ui16 y,
                             struct Vec4ui8 color) {
@@ -91,16 +92,14 @@ void debugImageData(struct Image *image) {
 }
 
 void fillTriangle(struct Image *image, struct Vec3f32 v0, struct Vec3f32 v1,
-                  struct Vec3f32 v2, struct Vec4ui8 color, f32 *zBuffer) {
-  struct Vec3f32 v0i32 = CREATE_VEC3f32(VIEWSPACE_TO_WORLDSPACEX(v0.x),
-                                        VIEWSPACE_TO_WORLDSPACEY(v0.y),
-                                        VIEWSPACE_TO_WORLDSPACEY(v0.z));
-  struct Vec3f32 v1i32 = CREATE_VEC3f32(VIEWSPACE_TO_WORLDSPACEX(v1.x),
-                                        VIEWSPACE_TO_WORLDSPACEY(v1.y),
-                                        VIEWSPACE_TO_WORLDSPACEY(v1.z));
-  struct Vec3f32 v2i32 = CREATE_VEC3f32(VIEWSPACE_TO_WORLDSPACEX(v2.x),
-                                        VIEWSPACE_TO_WORLDSPACEY(v2.y),
-                                        VIEWSPACE_TO_WORLDSPACEY(v2.z));
+                  struct Vec3f32 v2, struct Vec4ui8 c0, struct Vec4ui8 c1,
+                  struct Vec4ui8 c2, f32 *zBuffer) {
+  struct Vec2f32 v0i32 = CREATE_VEC2f32(VIEWSPACE_TO_WORLDSPACEX(v0.x),
+                                        VIEWSPACE_TO_WORLDSPACEY(v0.y));
+  struct Vec2f32 v1i32 = CREATE_VEC2f32(VIEWSPACE_TO_WORLDSPACEX(v1.x),
+                                        VIEWSPACE_TO_WORLDSPACEY(v1.y));
+  struct Vec2f32 v2i32 = CREATE_VEC2f32(VIEWSPACE_TO_WORLDSPACEX(v2.x),
+                                        VIEWSPACE_TO_WORLDSPACEY(v2.y));
   i32 xMin = MIN(MIN(v0i32.x, v1i32.x), v2i32.x);
   i32 yMin = MIN(MIN(v0i32.y, v1i32.y), v2i32.y);
 
@@ -132,6 +131,12 @@ void fillTriangle(struct Image *image, struct Vec3f32 v0, struct Vec3f32 v1,
 
       if (inside && zBuffer[y * image->width + x] < z) {
         zBuffer[y * image->width + x] = z;
+        struct Vec4ui8 color = {
+            alpha * c0.x + beta * c1.x + gamma * c2.x, //
+            alpha * c0.y + beta * c1.y + gamma * c2.y, //
+            alpha * c0.z + beta * c1.z + gamma * c2.z, //
+            255,                                       //
+        };
         setPixel(image, x, y, color);
       }
     }

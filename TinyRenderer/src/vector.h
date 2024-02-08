@@ -115,6 +115,16 @@ struct Vec2i8 {
     };
   };
 };
+struct Vec3ui8 {
+  union {
+    ui8 pos[3];
+    struct {
+      ui8 x;
+      ui8 y;
+      ui8 z;
+    };
+  };
+};
 
 struct Vec2ui8 {
   union {
