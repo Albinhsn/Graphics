@@ -40,19 +40,18 @@ int main()
   initImage(&image, WIDTH, HEIGHT, data);
 
   struct Image texture;
-  loadTarga(&texture, "./data/african_head_diffuse.tga");
+  loadTarga(&texture, "./data/diablo3_pose_diffuse.tga");
 
   struct Image normalMap;
-  loadTarga(&normalMap, "./data/african_head_nm.tga");
-  printf("loaded normal: %d %d\n", normalMap.width, normalMap.height);
+  loadTarga(&normalMap, "./data/diablo3_pose_nm.tga");
 
-  // struct Image nmMap;
-  // unsigned     error = lodepng_decode32_file(&nmMap.data, &nmMap.width, &nmMap.height, "./data/african_head_nm_tangent.png");
+  // struct Image normalMapTangent;
+  // loadTarga(&normalMapTangent, "./data/diablo3_pose_nm.tga");
 
   struct WavefrontObject obj;
 
   initWavefront(&obj);
-  parseWavefrontObject(&obj, "./data/african_head.obj");
+  parseWavefrontObject(&obj, "./data/diablo3_pose.obj");
 
   for (i32 i = 0; i < obj.faceCount; i++)
   {
@@ -73,19 +72,17 @@ int main()
     struct Vec2f32       t1                 = CAST_VEC3f32_TO_VEC2f32(textureCoordinates[faceVertex1.textureIdx - 1]);
     struct Vec2f32       t2                 = CAST_VEC3f32_TO_VEC2f32(textureCoordinates[faceVertex2.textureIdx - 1]);
 
-    struct Vec3f32       n0                 = normals[faceVertex0.normalIdx - 1];
-    struct Vec3f32       n1                 = normals[faceVertex1.normalIdx - 1];
-    struct Vec3f32       n2                 = normals[faceVertex2.normalIdx - 1];
-
     struct Vec3i32       v0Proj             = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, MatMul4x4(modelView, Vec3f32ToMatrix(v0)))));
     struct Vec3i32       v1Proj             = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, MatMul4x4(modelView, Vec3f32ToMatrix(v1)))));
     struct Vec3i32       v2Proj             = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, MatMul4x4(modelView, Vec3f32ToMatrix(v2)))));
 
-    fillTriangle(&image, &texture, &normalMap, v0Proj, v1Proj, v2Proj, t0, t1, t2, n0, n1, n2, zBuffer);
+    struct Matrix4x4     viewProjModel      = MatMul4x4(viewport, MatMul4x4(projectionMatrix, modelView));
+
+    fillTriangle(&image, &texture, &normalMap, v0Proj, v1Proj, v2Proj, t0, t1, t2, zBuffer, viewProjModel);
   }
 
-  saveTarga(&image, "output.tga");
-  saveTarga(&normalMap, "normal.tga");
+  saveTarga(&image, "output2.tga");
+
   destroyWavefront(&obj);
   return 0;
 }

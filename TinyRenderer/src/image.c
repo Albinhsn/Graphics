@@ -102,7 +102,7 @@ void debugImageData(struct Image* image)
 }
 
 void fillTriangle(struct Image* image, struct Image* texture, struct Image* normalMap, struct Vec3i32 v0, struct Vec3i32 v1, struct Vec3i32 v2, struct Vec2f32 uv0, struct Vec2f32 uv1,
-                  struct Vec2f32 uv2, struct Vec3f32 n0, struct Vec3f32 n1, struct Vec3f32 n2, i32* zBuffer)
+                  struct Vec2f32 uv2, i32* zBuffer, struct Matrix4x4 m)
 {
 
   i32 xMin      = MIN(MIN(v0.x, v1.x), v2.x);
@@ -142,6 +142,9 @@ void fillTriangle(struct Image* image, struct Image* texture, struct Image* norm
         i32            tIdx           = (i32)(tu + tv * texture->width) * 4;
 
         struct Vec3f32 normalColor    = {(f32)normalMap->data[tIdx + 2], (f32)normalMap->data[tIdx + 1], (f32)normalMap->data[tIdx + 0]};
+        // struct Vec3i32 normalProj     = MatrixToVec3f32(MatMul4x4(m, Vec3f32ToMatrix(normalColor)));
+        // struct Vec3f32 p              = {(f32)normalProj.x, (f32)normalProj.y, (f32)normalProj.z};
+        // normalizeVec3(&p);
         normalizeVec3(&normalColor);
 
         f32 intensity = dotProductVec3(normalColor, LIGHT_DIR);
