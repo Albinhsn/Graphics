@@ -179,6 +179,8 @@ void             buildViewportMatrix4x4(struct Matrix4x4* m, i32 x, i32 y, i32 w
 
 struct Matrix4x4 lookAt(struct Vec3f32 eye, struct Vec3f32 center, struct Vec3f32 up);
 
+struct Vec3f32 VecMul3f32(struct Vec3f32 a, struct Vec3f32 b);
+
 struct Matrix4x4 MatMul4x4(struct Matrix4x4 m1, struct Matrix4x4 m2);
 struct Matrix4x4 Vec3f32ToMatrix(struct Vec3f32 v);
 struct Vec3i32   MatrixToVec3f32(struct Matrix4x4 m);

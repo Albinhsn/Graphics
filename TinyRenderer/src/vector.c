@@ -2,6 +2,17 @@
 #include "common.h"
 #include <math.h>
 
+struct Vec3f32 VecMul3f32(struct Vec3f32 a, struct Vec3f32 b)
+{
+  struct Vec3f32 res = {
+      a.x * b.x, //
+      a.y * b.y, //
+      a.z * b.z  //
+  };
+
+  return res;
+}
+
 struct Vec4f32 MatVecMul4x4(struct Matrix4x4 mat, struct Vec4f32 vec)
 {
   struct Vec4f32 res = {
@@ -32,11 +43,12 @@ struct Matrix4x4 lookAt(struct Vec3f32 eye, struct Vec3f32 center, struct Vec3f3
   struct Matrix4x4 tr;
   buildIdentityMatrix4x4(&tr);
 
-  for(i32 i = 0; i< 3;i++){
+  for (i32 i = 0; i < 3; i++)
+  {
     minV.m[0][i] = x.pos[i];
     minV.m[1][i] = y.pos[i];
     minV.m[2][i] = z.pos[i];
-    tr.m[i][3] = -eye.pos[i];
+    tr.m[i][3]   = -eye.pos[i];
   }
   return MatMul4x4(minV, tr);
 }
@@ -135,24 +147,24 @@ i32 crossProduct2D(struct Vec2i32 v0, struct Vec2i32 v1, struct Vec2i32 point)
   return v0v1.x * v0p.y - v0v1.y * v0p.x;
 }
 
-// f32 crossProduct2Df32(struct Vec2f32 v0, struct Vec2f32 v1,
-//                       struct Vec2f32 point) {
-//   struct Vec2f32 v0v1 = {v1.x - v0.x, v1.y - v0.y};
-//   struct Vec2f32 v0p = {point.x - v0.x, point.y - v0.y};
+f32 crossProduct2Df32(struct Vec2f32 v0, struct Vec2f32 v1, struct Vec2f32 point)
+{
+  struct Vec2f32 v0v1 = {v1.x - v0.x, v1.y - v0.y};
+  struct Vec2f32 v0p  = {point.x - v0.x, point.y - v0.y};
 
-//   return v0v1.x * v0p.y - v0v1.y * v0p.x;
-// }
-// struct Vec3f32 barycentric3D(struct Vec2f32 v0, struct Vec2f32 v1,
-//                              struct Vec2f32 v2, struct Vec2f32 point) {
-//   f32 total = crossProduct2Df32(v0, v1, v2);
-//   struct Vec3f32 b = {
-//       crossProduct2Df32(v0, v2, point) / total, //
-//       crossProduct2Df32(v1, v0, point) / total, //
-//       crossProduct2Df32(v2, v0, point) / total  //
-//   };
+  return v0v1.x * v0p.y - v0v1.y * v0p.x;
+}
+struct Vec3f32 barycentric3D(struct Vec2f32 v0, struct Vec2f32 v1, struct Vec2f32 v2, struct Vec2f32 point)
+{
+  f32            total = crossProduct2Df32(v0, v1, v2);
+  struct Vec3f32 b     = {
+      crossProduct2Df32(v0, v2, point) / total, //
+      crossProduct2Df32(v1, v0, point) / total, //
+      crossProduct2Df32(v2, v0, point) / total  //
+  };
 
-//   return b;
-// }
+  return b;
+}
 
 struct Vec3f32 vectorSubtraction(struct Vec3f32 a, struct Vec3f32 b)
 {

@@ -1,9 +1,11 @@
 #include "common.h"
 #include "files.h"
 #include "image.h"
+#include "lodepng.h"
 #include "vector.h"
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define VIEWSPACE_TO_WORLDSPACEY(x) (((x) + 1.0f) * (HEIGHT / 2.0f))
 #define VIEWSPACE_TO_WORLDSPACEX(x) (((x) + 1.0f) * (WIDTH / 2.0f))
@@ -16,7 +18,7 @@ int main()
 {
   ui8            data[WIDTH * HEIGHT * 4];
   i32            zBuffer[WIDTH * HEIGHT];
-  struct Vec3f32 eye    = {1.0f, 1.0f, 3.0f};
+  struct Vec3f32 eye    = {0.0f, 0.0f, 1.0f};
   struct Vec3f32 center = {0.0f, 0.0f, 0.0f};
 
   for (int i = 0; i < WIDTH * HEIGHT; i++)
@@ -40,7 +42,15 @@ int main()
   struct Image texture;
   loadTarga(&texture, "./data/african_head_diffuse.tga");
 
+  struct Image normalMap;
+  loadTarga(&normalMap, "./data/african_head_nm.tga");
+  printf("loaded normal: %d %d\n", normalMap.width, normalMap.height);
+
+  // struct Image nmMap;
+  // unsigned     error = lodepng_decode32_file(&nmMap.data, &nmMap.width, &nmMap.height, "./data/african_head_nm_tangent.png");
+
   struct WavefrontObject obj;
+
   initWavefront(&obj);
   parseWavefrontObject(&obj, "./data/african_head.obj");
 
@@ -71,10 +81,11 @@ int main()
     struct Vec3i32       v1Proj             = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, MatMul4x4(modelView, Vec3f32ToMatrix(v1)))));
     struct Vec3i32       v2Proj             = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, MatMul4x4(modelView, Vec3f32ToMatrix(v2)))));
 
-    fillTriangle(&image, &texture, v0Proj, v1Proj, v2Proj, t0, t1, t2, n0, n1, n2, zBuffer);
+    fillTriangle(&image, &texture, &normalMap, v0Proj, v1Proj, v2Proj, t0, t1, t2, n0, n1, n2, zBuffer);
   }
 
   saveTarga(&image, "output.tga");
+  saveTarga(&normalMap, "normal.tga");
   destroyWavefront(&obj);
   return 0;
 }

@@ -18,6 +18,7 @@ static void debugTargaHeader(struct TargaHeader header)
 
 bool loadTarga(struct Image* image, const char* filename)
 {
+  printf("Loading targa '%s'\n", filename);
 
   struct TargaHeader header;
 
@@ -66,6 +67,7 @@ bool loadTarga(struct Image* image, const char* filename)
   }
   image->width  = header.width;
   image->height = header.height;
+  printf("Got dimensions: %d %d\n", image->width, image->height);
 
   if (header.imageType == 2)
   {
@@ -79,63 +81,100 @@ bool loadTarga(struct Image* image, const char* filename)
   }
   else if (header.imageType == 10)
   {
-    i32 imageIndex = 0;
-    ui8 byte;
-    i32 counter = 0;
-    while (imageIndex < imageSize)
+    if (header.imagePixelSize == 24)
     {
-      fread(&byte, 1, sizeof(ui8), filePtr);
-
-      ui8* curr = &image->data[imageIndex];
-      if (curr[0] != 0)
+      i32 imageIndex = 0;
+      ui8 byte;
+      while (imageIndex < imageSize)
       {
-        printf("Overwrite at %d\n", imageIndex);
-      }
-      if (byte >= 128)
-      {
-        ui8            repeated = byte - 127;
+        fread(&byte, 1, sizeof(ui8), filePtr);
 
-        struct Vec3ui8 color;
-        fread(&color, 1, sizeof(struct Vec3ui8), filePtr);
-        // printf("%d %d %d %d\n", color.x, color.y, color.z, 255);
-
-        for (i32 j = 0; j < repeated; j++)
+        ui8* curr = &image->data[imageIndex];
+        if (curr[0] != 0)
         {
-          curr[j * bpp + 0] = color.x;
-          curr[j * bpp + 1] = color.y;
-          curr[j * bpp + 2] = color.z;
-          curr[j * bpp + 3] = 255;
+          printf("Overwrite at %d\n", imageIndex);
         }
-        imageIndex += repeated * bpp;
-      }
-      else
-      {
-        ui8 repeated = byte + 1;
-
-        for (i32 j = 0; j < repeated; j++)
+        if (byte >= 128)
         {
+          ui8            repeated = byte - 127;
+
           struct Vec3ui8 color;
           fread(&color, 1, sizeof(struct Vec3ui8), filePtr);
-          // printf("%d %d %d %d\n", color.x, color.y, color.z, 255);
 
-          curr[j * bpp + 0] = color.x;
-          curr[j * bpp + 1] = color.y;
-          curr[j * bpp + 2] = color.z;
-          curr[j * bpp + 3] = 255;
+          for (i32 j = 0; j < repeated; j++)
+          {
+            curr[j * bpp + 0] = color.x;
+            curr[j * bpp + 1] = color.y;
+            curr[j * bpp + 2] = color.z;
+            curr[j * bpp + 3] = 255;
+          }
+          imageIndex += repeated * bpp;
         }
-        imageIndex += repeated * bpp;
-      }
-      counter++;
-      if (counter >= 100)
-      {
-        // exit(1);
+        else
+        {
+          ui8 repeated = byte + 1;
+
+          for (i32 j = 0; j < repeated; j++)
+          {
+            struct Vec3ui8 color;
+            fread(&color, 1, sizeof(struct Vec3ui8), filePtr);
+
+            curr[j * bpp + 0] = color.x;
+            curr[j * bpp + 1] = color.y;
+            curr[j * bpp + 2] = color.z;
+            curr[j * bpp + 3] = 255;
+          }
+          imageIndex += repeated * bpp;
+        }
       }
     }
-  }
+    else
+    {
+      i32 imageIndex = 0;
+      ui8 byte;
+      while (imageIndex < imageSize)
+      {
+        fread(&byte, 1, sizeof(ui8), filePtr);
 
-  if (header.imagePixelSize == 24)
-  {
-    // Do stuff
+        ui8* curr = &image->data[imageIndex];
+        if (curr[0] != 0)
+        {
+          printf("Overwrite at %d\n", imageIndex);
+        }
+        if (byte >= 128)
+        {
+          ui8            repeated = byte - 127;
+
+          struct Vec4ui8 color;
+          fread(&color, 1, sizeof(struct Vec4ui8), filePtr);
+
+          for (i32 j = 0; j < repeated; j++)
+          {
+            curr[j * bpp + 0] = color.x;
+            curr[j * bpp + 1] = color.y;
+            curr[j * bpp + 2] = color.z;
+            curr[j * bpp + 3] = color.w;
+          }
+          imageIndex += repeated * bpp;
+        }
+        else
+        {
+          ui8 repeated = byte + 1;
+
+          for (i32 j = 0; j < repeated; j++)
+          {
+            struct Vec4ui8 color;
+            fread(&color, 1, sizeof(struct Vec4ui8), filePtr);
+
+            curr[j * bpp + 0] = color.x;
+            curr[j * bpp + 1] = color.y;
+            curr[j * bpp + 2] = color.z;
+            curr[j * bpp + 3] = color.w;
+          }
+          imageIndex += repeated * bpp;
+        }
+      }
+    }
   }
 
   if (fclose(filePtr) != 0)
@@ -405,7 +444,7 @@ void parseWavefrontObject(struct WavefrontObject* obj, const char* filename)
 
 void saveTarga(struct Image* image, const char* filename)
 {
-
+  printf("Saving at '%s'\n", filename);
   FILE*              filePtr;
   unsigned long      count;
 
