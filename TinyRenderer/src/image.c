@@ -1,4 +1,5 @@
 #include "image.h"
+#include "common.h"
 #include "vector.h"
 #include <stdbool.h>
 #include <stdio.h>
@@ -101,97 +102,105 @@ void debugImageData(struct Image* image)
   }
 }
 
-void fillTriangle(struct Image* image, struct Image* texture, struct Image* normalMap, struct Vec3i32 v0, struct Vec3i32 v1, struct Vec3i32 v2, struct Vec2f32 uv0, struct Vec2f32 uv1,
-                  struct Vec2f32 uv2, struct Vec3f32 n0, struct Vec3f32 n1, struct Vec3f32 n2, i32* zBuffer, struct Matrix4x4 m, struct Vec3f32 v0Proj, struct Vec3f32 v1Proj, struct Vec3f32 v2Proj)
+void fillTriangle(struct Image* image, struct Image* texture, struct Image* normalMap, struct Vec3f32 v0, struct Vec3f32 v1, struct Vec3f32 v2, struct Vec2f32 uv0, struct Vec2f32 uv1,
+                  struct Vec2f32 uv2, struct Vec3f32 n0, struct Vec3f32 n1, struct Vec3f32 n2, i32* zBuffer, struct Matrix4x4 viewport, struct Matrix4x4 projectionMatrix, struct Matrix4x4 modelView)
 {
+  struct Vec3f32   v0Proj         = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, MatMul4x4(modelView, Vec3f32ToMatrix(v0)))));
+  struct Vec3f32   v1Proj         = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, MatMul4x4(modelView, Vec3f32ToMatrix(v1)))));
+  struct Vec3f32   v2Proj         = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, MatMul4x4(modelView, Vec3f32ToMatrix(v2)))));
 
-  i32 xMin      = MIN(MIN(v0.x, v1.x), v2.x);
-  i32 yMin      = MIN(MIN(v0.y, v1.y), v2.y);
+  struct Matrix4x4 m1             = invertMat4x4(MatMul4x4(projectionMatrix, modelView));
 
-  i32 xMax      = MAX(MAX(v0.x, v1.x), v2.x);
-  i32 yMax      = MAX(MAX(v0.y, v1.y), v2.y);
+  struct Vec4f32   n0v            = MatVecMul4x4(m1, CREATE_VEC4f32(n0.x, n0.y, n0.z, 0.0f));
+  struct Vec3f32   n0Proj         = CAST_VEC4f32_TO_VEC3f32(n0v);
+  struct Vec3f32   n1Proj         = CAST_VEC4f32_TO_VEC3f32(MatVecMul4x4(m1, CREATE_VEC4f32(n1.x, n1.y, n1.z, 0.0f)));
+  struct Vec3f32   n2Proj         = CAST_VEC4f32_TO_VEC3f32(MatVecMul4x4(m1, CREATE_VEC4f32(n2.x, n2.y, n2.z, 0.0f)));
 
-  i32 totalArea = crossProduct2D(CREATE_VEC2i32(v0.x, v0.y), CREATE_VEC2i32(v1.x, v1.y), CREATE_VEC2i32(v2.x, v2.y));
+  struct Vec4f32   modelViewVert0 = MatVecMul4x4(modelView, CREATE_VEC4f32(v0.x, v0.y, v0.z, 1.0f));
+  struct Vec4f32   glVertex0      = MatVecMul4x4(projectionMatrix, modelViewVert0);
+  struct Vec4f32   glVertex1      = MatVecMul4x4(projectionMatrix, (MatVecMul4x4(modelView, CREATE_VEC4f32(v1.x, v1.y, v1.z, 1.0f))));
+  struct Vec4f32   glVertex2      = MatVecMul4x4(projectionMatrix, (MatVecMul4x4(modelView, CREATE_VEC4f32(v2.x, v2.y, v2.z, 1.0f))));
 
-  for (i32 x = xMin; x < xMax; x++)
+  struct Vec3f32   ndc_tri0       = CREATE_VEC3f32(glVertex0.x / glVertex0.w, glVertex0.y / glVertex0.w, glVertex0.z / glVertex0.w);
+  struct Vec3f32   ndc_tri1       = CREATE_VEC3f32(glVertex1.x / glVertex1.w, glVertex1.y / glVertex1.w, glVertex1.z / glVertex1.w);
+  struct Vec3f32   ndc_tri2       = CREATE_VEC3f32(glVertex2.x / glVertex2.w, glVertex2.y / glVertex2.w, glVertex2.z / glVertex2.w);
+
+  i32              xMin           = MIN(MIN(v0Proj.x, v1Proj.x), v2Proj.x);
+  i32              yMin           = MIN(MIN(v0Proj.y, v1Proj.y), v2Proj.y);
+
+  i32              xMax           = MAX(MAX(v0Proj.x, v1Proj.x), v2Proj.x);
+  i32              yMax           = MAX(MAX(v0Proj.y, v1Proj.y), v2Proj.y);
+
+  for (i32 x = xMin; x <= xMax; x++)
   {
-    for (i32 y = yMin; y < yMax; y++)
+
+    for (i32 y = yMin; y <= yMax; y++)
     {
-      struct Vec2i32 point  = {x, y};
+      struct Vec2i32 point     = {x, y};
 
-      i32            w0     = crossProduct2D(CREATE_VEC2i32(v1.x, v1.y), CREATE_VEC2i32(v2.x, v2.y), point);
-      i32            w1     = crossProduct2D(CREATE_VEC2i32(v2.x, v2.y), CREATE_VEC2i32(v0.x, v0.y), point);
-      i32            w2     = crossProduct2D(CREATE_VEC2i32(v0.x, v0.y), CREATE_VEC2i32(v1.x, v1.y), point);
+      f32            w0        = crossProduct2Df32(CREATE_VEC2f32(v1Proj.x, v1Proj.y), CREATE_VEC2f32(v2Proj.x, v2Proj.y), CREATE_VEC2f32(point.x, point.y));
+      f32            w1        = crossProduct2Df32(CREATE_VEC2f32(v2Proj.x, v2Proj.y), CREATE_VEC2f32(v0Proj.x, v0Proj.y), CREATE_VEC2f32(point.x, point.y));
+      f32            w2        = crossProduct2Df32(CREATE_VEC2f32(v0Proj.x, v0Proj.y), CREATE_VEC2f32(v1Proj.x, v1Proj.y), CREATE_VEC2f32(point.x, point.y));
 
-      f32            alpha  = w0 / (f32)totalArea;
-      f32            beta   = w1 / (f32)totalArea;
-      f32            gamma  = w2 / (f32)totalArea;
+      f32            alpha     = w0 / glVertex0.w;
+      f32            beta      = w1 / glVertex1.w;
+      f32            gamma     = w2 / glVertex2.w;
 
-      bool           inside = w0 >= 0 && w1 >= 0 && w2 >= 0;
+      f32            totalArea = alpha + beta + gamma;
+      alpha                    = alpha / totalArea;
+      beta                     = beta / totalArea;
+      gamma                    = gamma / totalArea;
 
-      i32            z      = alpha * v0.z + beta * v1.z + gamma * v2.z;
+      bool inside              = w0 >= 0 && w1 >= 0 && w2 >= 0;
+
+      i32  z                   = alpha * v0Proj.z + beta * v1Proj.z + gamma * v2Proj.z;
 
       if (inside && zBuffer[y * image->width + x] < z)
       {
         zBuffer[y * image->width + x] = z;
-        f32            u              = (alpha * uv0.x + beta * uv1.x + gamma * uv2.x);
-        f32            v              = (alpha * uv0.y + beta * uv1.y + gamma * uv2.y);
+        f32 u                         = (alpha * uv0.x + beta * uv1.x + gamma * uv2.x);
+        f32 v                         = (alpha * uv0.y + beta * uv1.y + gamma * uv2.y);
 
-        i32            tu             = u * texture->width;
-        i32            tv             = v * texture->height;
-        i32            uv             = (i32)(tu + tv * texture->width) * 4;
+        i32 tu                        = u * texture->width;
+        i32 tv                        = v * texture->height;
+        // uv idx
+        i32 uv = (i32)(tu + tv * texture->width) * 4;
 
-        struct Matrix3x3 varyingNM = {
-          .i = {},
-          .j = {},
-          .k = {},
-        }
-
-        struct Vec3f32 bn             = {
-            alpha * n0.x + beta * n1.x + gamma * n2.x, //
-            alpha * n0.y + beta * n1.y + gamma * n2.y, //
-            alpha * n0.z + beta * n1.z + gamma * n2.z  //
+        // bn
+        struct Vec3f32 bn = {
+            .x = alpha * n0Proj.x + beta * n1Proj.x + gamma * n2Proj.x, //
+            .y = alpha * n0Proj.y + beta * n1Proj.y + gamma * n2Proj.y, //
+            .z = alpha * n0Proj.z + beta * n1Proj.z + gamma * n2Proj.z, //
         };
         normalizeVec3(&bn);
-        printf("%d %d\n", x,y);
-        printf("bn: %lf %lf %lf\n", bn.x, bn.y, bn.z);
-
         struct Matrix3x3 A = {
-            .i = {v1Proj.x - v0Proj.x, v1Proj.y - v0Proj.y, v1Proj.z - v0Proj.z}, //
-            .j = {v2Proj.x - v0Proj.x, v2Proj.y - v0Proj.y, v2Proj.z - v0Proj.z}, //
-            .k = {       bn.x,        bn.x,        bn.z}  //
+            .i = {ndc_tri1.x - ndc_tri0.x, ndc_tri1.y - ndc_tri0.y, ndc_tri1.z - ndc_tri0.z},
+            .j = {ndc_tri2.x - ndc_tri0.x, ndc_tri2.y - ndc_tri0.y, ndc_tri2.z - ndc_tri0.z},
+            .k = {                   bn.x,                    bn.y,                    bn.z},
         };
-        printf("%lf %lf %lf\n", A.m[0][0], A.m[0][1], A.m[0][2]);
-        printf("%lf %lf %lf\n", A.m[1][0], A.m[1][1], A.m[1][2]);
-        printf("%lf %lf %lf\n", A.m[2][0], A.m[2][1], A.m[2][2]);
-        printf("---\n");
 
         struct Matrix3x3 AI = invertMat3x3(A);
-        printf("%lf %lf %lf\n", AI.m[0][0], AI.m[0][1], AI.m[0][2]);
-        printf("%lf %lf %lf\n", AI.m[1][0], AI.m[1][1], AI.m[1][2]);
-        printf("%lf %lf %lf\n", AI.m[2][0], AI.m[2][1], AI.m[2][2]);
-        printf("---\n");
-        exit(1);
-
-        struct Vec3f32 i = MatVecMul3x3(AI, CREATE_VEC3f32(uv1.x - uv0.x, uv2.x - uv0.x, 0.0f));
-        struct Vec3f32 j = MatVecMul3x3(AI, CREATE_VEC3f32(uv1.y - uv0.y, uv2.y - uv0.y, 0.0f));
+        struct Vec3f32   i  = MatVecMul3x3(AI, CREATE_VEC3f32(uv1.x - uv0.x, uv2.x - uv0.x, 0.0f));
+        struct Vec3f32   j  = MatVecMul3x3(AI, CREATE_VEC3f32(uv1.y - uv0.y, uv2.y - uv0.y, 0.0f));
 
         normalizeVec3(&i);
         normalizeVec3(&j);
 
         struct Matrix3x3 B = {
-            .i = { i.x,  i.y,  i.z}, //
-            .j = { j.x,  j.y,  j.z}, //
-            .k = {bn.x, bn.y, bn.z}  //
+            .i = {i.x, j.x, bn.x}, //
+            .j = {i.y, j.y, bn.y},
+            .k = {i.z, j.z, bn.z}
         };
 
-        struct Vec3f32 uvVec3 = {u, v, 0.0f};
-        normalizeVec3(&uvVec3);
-        struct Vec3f32 n = MatVecMul3x3(B, uvVec3);
+        struct Vec3f32 normal = {(f32)normalMap->data[uv + 2] / 255.0f * 2.0f - 1.0f, (f32)normalMap->data[uv + 1] / 255.0f * 2.0f - 1.0f, (f32)normalMap->data[uv + 0] / 255.0f * 2.0f - 1.0f};
+        struct Vec3f32 n      = MatVecMul3x3(B, normal);
         normalizeVec3(&n);
 
-        f32 intensity = dotProductVec3(n, LIGHT_DIR);
+        struct Vec3f32 projLight = CAST_VEC4f32_TO_VEC3f32(MatVecMul4x4(projectionMatrix, MatVecMul4x4(modelView, CREATE_VEC4f32(LIGHT_DIR.x, LIGHT_DIR.y, LIGHT_DIR.z, 0.0f))));
+        normalizeVec3(&projLight);
 
+        f32 intensity = dotProductVec3(n, projLight);
+        intensity     = intensity < 0 ? 0 : intensity;
         if (intensity > 0)
         {
           struct Vec4ui8 color = {texture->data[uv + 2] * intensity, texture->data[uv + 1] * intensity, texture->data[uv + 0] * intensity, 255};

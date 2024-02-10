@@ -1,16 +1,77 @@
 #include "vector.h"
 #include "common.h"
 #include <math.h>
+#include <stdio.h>
 
 static f32 det2x2(f32 a00, f32 a01, f32 a10, f32 a11)
 {
   return a00 * a11 - a01 * a10;
 }
+void debugVec3i32(struct Vec3i32 v)
+{
+  printf("%d %d %d\n", v.x, v.y, v.z);
+}
+
+void debugVec2f32(struct Vec2f32 v)
+{
+  printf("%lf\t%lf\n", v.x, v.y);
+}
+void debugVec3f32(struct Vec3f32 v)
+{
+  printf("%lf %lf %lf\n", v.x, v.y, v.z);
+}
+
+void debugVec4f32(struct Vec4f32 v)
+{
+  printf("%lf %lf %lf %lf\n", v.x, v.y, v.z, v.w);
+}
 static f32 det3x3(struct Matrix3x3 m)
 {
-  return (m.m[0][0] * det2x2(m.m[1][1], m.m[1][2], m.m[2][1], m.m[2][2]) - //
-          m.m[0][1] * det2x2(m.m[1][0], m.m[1][2], m.m[2][0], m.m[2][2]) + //
-          m.m[0][2] * det2x2(m.m[1][0], m.m[1][1], m.m[2][0], m.m[2][1]));
+  f32 d0 = m.m[0][0] * det2x2(m.m[1][1], m.m[1][2], m.m[2][1], m.m[2][2]);
+  f32 d1 = m.m[0][1] * det2x2(m.m[1][0], m.m[1][2], m.m[2][0], m.m[2][2]);
+  f32 d2 = m.m[0][2] * det2x2(m.m[1][0], m.m[1][1], m.m[2][0], m.m[2][1]);
+
+  return (d0 - d1 + d2);
+}
+
+static f32 det4x4(struct Matrix4x4 m)
+{
+  struct Matrix3x3 m00 = {
+      .i = {m.m[1][1], m.m[1][2], m.m[1][3]},
+      .j = {m.m[2][1], m.m[2][2], m.m[2][3]},
+      .k = {m.m[3][1], m.m[3][2], m.m[3][3]},
+  };
+  struct Matrix3x3 m01 = {
+      .i = {m.m[1][0], m.m[1][2], m.m[1][3]},
+      .j = {m.m[2][0], m.m[2][2], m.m[2][3]},
+      .k = {m.m[3][0], m.m[3][2], m.m[3][3]},
+  };
+  struct Matrix3x3 m02 = {
+      .i = {m.m[1][0], m.m[1][1], m.m[1][3]},
+      .j = {m.m[2][0], m.m[2][1], m.m[2][3]},
+      .k = {m.m[3][0], m.m[3][1], m.m[3][3]},
+  };
+  struct Matrix3x3 m03 = {
+      .i = {m.m[1][0], m.m[1][1], m.m[1][2]},
+      .j = {m.m[2][0], m.m[2][1], m.m[2][2]},
+      .k = {m.m[3][0], m.m[3][1], m.m[3][2]},
+  };
+
+  f32 d0 = m.m[0][0] * det3x3(m00);
+  f32 d1 = m.m[0][1] * det3x3(m01);
+  f32 d2 = m.m[0][2] * det3x3(m02);
+  f32 d3 = m.m[0][3] * det3x3(m03);
+  return (d0 - d1 + d2 - d3);
+}
+static void scaleMatrix4x4(struct Matrix4x4* m, f32 scale)
+{
+  for (i32 i = 0; i < 4; i++)
+  {
+    for (i32 j = 0; j < 4; j++)
+    {
+      m->m[i][j] *= scale;
+    }
+  }
 }
 
 static void scaleMatrix3x3(struct Matrix3x3* m, f32 scale)
@@ -23,15 +84,133 @@ static void scaleMatrix3x3(struct Matrix3x3* m, f32 scale)
     }
   }
 }
+void debugMatrix3x3(struct Matrix3x3 res)
+{
+  printf("%lf %lf %lf\n", res.i[0], res.i[1], res.i[2]);
+  printf("%lf %lf %lf\n", res.j[0], res.j[1], res.j[2]);
+  printf("%lf %lf %lf\n", res.k[0], res.k[1], res.k[2]);
+}
 
+void debugMatrix4x4(struct Matrix4x4 res)
+{
+  printf("%lf %lf %lf %lf\n", res.i[0], res.i[1], res.i[2], res.i[3]);
+  printf("%lf %lf %lf %lf\n", res.j[0], res.j[1], res.j[2], res.j[3]);
+  printf("%lf %lf %lf %lf\n", res.k[0], res.k[1], res.k[2], res.k[3]);
+  printf("%lf %lf %lf %lf\n", res.l[0], res.l[1], res.l[2], res.l[3]);
+}
+struct Matrix4x4 invertMat4x4(struct Matrix4x4 m)
+{
+  struct Matrix3x3 m00 = {
+      .i = {m.m[1][1], m.m[1][2], m.m[1][3]}, //
+      .j = {m.m[2][1], m.m[2][2], m.m[2][3]}, //
+      .k = {m.m[3][1], m.m[3][2], m.m[3][3]}  //
+  };
+  struct Matrix3x3 m01 = {
+      .i = {m.m[1][0], m.m[1][2], m.m[1][3]}, //
+      .j = {m.m[2][0], m.m[2][2], m.m[2][3]}, //
+      .k = {m.m[3][0], m.m[3][2], m.m[3][3]}  //
+  };
+  struct Matrix3x3 m02 = {
+      .i = {m.m[1][0], m.m[1][1], m.m[1][3]}, //
+      .j = {m.m[2][0], m.m[2][1], m.m[2][3]}, //
+      .k = {m.m[3][0], m.m[3][1], m.m[3][3]}  //
+  };
+  struct Matrix3x3 m03 = {
+      .i = {m.m[1][0], m.m[1][1], m.m[1][2]}, //
+      .j = {m.m[2][0], m.m[2][1], m.m[2][2]}, //
+      .k = {m.m[3][0], m.m[3][1], m.m[3][2]}  //
+  };
+
+  struct Matrix3x3 m10 = {
+      .i = {m.m[0][1], m.m[0][2], m.m[0][3]}, //
+      .j = {m.m[2][1], m.m[2][2], m.m[2][3]}, //
+      .k = {m.m[3][1], m.m[3][2], m.m[3][3]}  //
+  };
+  struct Matrix3x3 m11 = {
+      .i = {m.m[0][0], m.m[0][2], m.m[0][3]}, //
+      .j = {m.m[2][0], m.m[2][2], m.m[2][3]}, //
+      .k = {m.m[3][0], m.m[3][2], m.m[3][3]}  //
+  };
+  struct Matrix3x3 m12 = {
+      .i = {m.m[0][0], m.m[0][1], m.m[0][3]}, //
+      .j = {m.m[2][0], m.m[2][1], m.m[2][3]}, //
+      .k = {m.m[3][0], m.m[3][1], m.m[3][3]}  //
+  };
+  struct Matrix3x3 m13 = {
+      .i = {m.m[0][0], m.m[0][1], m.m[0][2]}, //
+      .j = {m.m[2][0], m.m[2][1], m.m[2][2]}, //
+      .k = {m.m[3][0], m.m[3][1], m.m[3][2]}  //
+  };
+
+  struct Matrix3x3 m20 = {
+      .i = {m.m[0][1], m.m[0][2], m.m[0][3]}, //
+      .j = {m.m[1][1], m.m[1][2], m.m[1][3]}, //
+      .k = {m.m[3][1], m.m[3][2], m.m[3][3]}  //
+  };
+
+  struct Matrix3x3 m21 = {
+      .i = {m.m[0][0], m.m[0][2], m.m[0][3]}, //
+      .j = {m.m[1][0], m.m[1][2], m.m[1][3]}, //
+      .k = {m.m[3][0], m.m[3][2], m.m[3][3]}  //
+  };
+  struct Matrix3x3 m22 = {
+      .i = {m.m[0][0], m.m[0][1], m.m[0][3]}, //
+      .j = {m.m[1][0], m.m[1][1], m.m[1][3]}, //
+      .k = {m.m[3][0], m.m[3][1], m.m[3][3]}  //
+  };
+  struct Matrix3x3 m23 = {
+      .i = {m.m[0][0], m.m[0][1], m.m[0][2]}, //
+      .j = {m.m[1][0], m.m[1][1], m.m[1][2]}, //
+      .k = {m.m[3][0], m.m[3][1], m.m[3][2]}  //
+  };
+  struct Matrix3x3 m30 = {
+      .i = {m.m[0][1], m.m[0][2], m.m[0][3]}, //
+      .j = {m.m[1][1], m.m[1][2], m.m[1][3]}, //
+      .k = {m.m[2][1], m.m[2][2], m.m[2][3]}  //
+  };
+  struct Matrix3x3 m31 = {
+      .i = {m.m[0][0], m.m[0][2], m.m[0][3]}, //
+      .j = {m.m[1][0], m.m[1][2], m.m[1][3]}, //
+      .k = {m.m[2][0], m.m[2][2], m.m[2][3]}  //
+  };
+  struct Matrix3x3 m32 = {
+      .i = {m.m[0][0], m.m[0][1], m.m[0][3]}, //
+      .j = {m.m[1][0], m.m[1][1], m.m[1][3]}, //
+      .k = {m.m[2][0], m.m[2][1], m.m[2][3]}  //
+  };
+  struct Matrix3x3 m33 = {
+      .i = {m.m[0][0], m.m[0][1], m.m[0][2]}, //
+      .j = {m.m[1][0], m.m[1][1], m.m[1][2]}, //
+      .k = {m.m[2][0], m.m[2][1], m.m[2][2]}  //
+  };
+  struct Matrix4x4 res = {
+      .i = { det3x3(m00), -det3x3(m01),  det3x3(m02), -det3x3(m03)},
+      .j = {-det3x3(m10),  det3x3(m11), -det3x3(m12),  det3x3(m13)},
+      .k = { det3x3(m20), -det3x3(m21),  det3x3(m22), -det3x3(m23)},
+      .l = {-det3x3(m30),  det3x3(m31), -det3x3(m32),  det3x3(m33)},
+  };
+  // debugMatrix4x4(res);
+
+  f32 det   = det4x4(m);
+  f32 scale = 1.0f / det;
+  scaleMatrix4x4(&res, scale);
+  return res;
+}
+
+struct Vec3i32 MatrixToVec3i32(struct Matrix4x4 m)
+{
+  f32            scale = m.m[3][0];
+  struct Vec3i32 res   = {m.m[0][0] / scale, m.m[1][0] / scale, m.m[2][0] / scale};
+  return res;
+}
 struct Matrix3x3 invertMat3x3(struct Matrix3x3 a)
 {
   struct Matrix3x3 res = {
       det2x2(a.j[1], a.j[2], a.k[1], a.k[2]), det2x2(a.i[2], a.i[1], a.k[2], a.k[1]), det2x2(a.i[1], a.i[2], a.j[1], a.j[2]), //
-      det2x2(a.j[2], a.j[0], a.k[2], a.k[1]), det2x2(a.i[0], a.i[2], a.k[0], a.k[2]), det2x2(a.i[2], a.i[0], a.j[2], a.j[0]), //
+      det2x2(a.j[2], a.j[0], a.k[2], a.k[0]), det2x2(a.i[0], a.i[2], a.k[0], a.k[2]), det2x2(a.i[2], a.i[0], a.j[2], a.j[0]), //
       det2x2(a.j[0], a.j[1], a.k[0], a.k[1]), det2x2(a.i[1], a.i[0], a.k[1], a.k[0]), det2x2(a.i[0], a.i[1], a.j[0], a.j[1]), //
   };
-  f32 scale = 1.0f / det3x3(res);
+  f32 scale = 1.0f / det3x3(a);
   scaleMatrix3x3(&res, scale);
   return res;
 }
@@ -91,10 +270,31 @@ struct Matrix4x4 lookAt(struct Vec3f32 eye, struct Vec3f32 center, struct Vec3f3
     minV.m[0][i] = x.pos[i];
     minV.m[1][i] = y.pos[i];
     minV.m[2][i] = z.pos[i];
-    tr.m[i][3]   = -eye.pos[i];
+    tr.m[i][3]   = -center.pos[i];
   }
   return MatMul4x4(minV, tr);
 }
+
+struct Matrix3x3 transposeMat3x3(struct Matrix3x3 m){
+  struct Matrix3x3 res = {
+    .i = {m.i[0], m.j[0], m.k[0]}, // 
+    .j = {m.i[1], m.j[1], m.k[1]}, // 
+    .k = {m.i[2], m.j[2], m.k[2]}, // 
+  };
+  return res;
+}
+struct Matrix4x4 transposeMat4x4(struct Matrix4x4 m)
+{
+  struct Matrix4x4 res = {
+      .i = {m.i[0], m.j[0], m.k[0], m.l[0]},
+      .j = {m.i[1], m.j[1], m.k[1], m.l[1]},
+      .k = {m.i[2], m.j[2], m.k[2], m.l[2]},
+      .l = {m.i[3], m.j[3], m.k[3], m.l[3]},
+  };
+
+  return res;
+}
+
 struct Matrix4x4 MatMul4x4(struct Matrix4x4 a, struct Matrix4x4 b)
 {
   f32              a00 = a.m[0][0], a01 = a.m[0][1], a02 = a.m[0][2], a03 = a.m[0][3];
@@ -143,9 +343,9 @@ struct Matrix4x4 Vec3f32ToMatrix(struct Vec3f32 v)
   return m;
 }
 
-struct Vec3i32 MatrixToVec3f32(struct Matrix4x4 m)
+struct Vec3f32 MatrixToVec3f32(struct Matrix4x4 m)
 {
-  struct Vec3i32 v = {m.m[0][0] / m.m[3][0], m.m[1][0] / m.m[3][0], m.m[2][0] / m.m[3][0]};
+  struct Vec3f32 v = {m.m[0][0] / m.m[3][0], m.m[1][0] / m.m[3][0], m.m[2][0] / m.m[3][0]};
 
   return v;
 }

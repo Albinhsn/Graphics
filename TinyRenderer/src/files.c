@@ -220,8 +220,8 @@ static f32 parseFloatFromString(const char* source, ui8* length)
     pos++;
   }
   memcpy(number, source, pos);
-  *length = pos;
-  return atof(number);
+  *length     = pos;
+  return strtof(number, NULL);
 }
 
 void initWavefront(struct WavefrontObject* obj)

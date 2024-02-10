@@ -22,7 +22,7 @@ typedef struct Vec3f32;
 #define MIN(x, y)                   (x < y ? x : y)
 #define MAX(x, y)                   (x < y ? y : x)
 
-#define LIGHT_DIR                   ((struct Vec3f32){2.0f, -1.0f, 1.0f})
+#define LIGHT_DIR                   ((struct Vec3f32){1.0f, 1.0f, 1.0f})
 
 #define WIDTH                       800
 #define HEIGHT                      800
@@ -30,6 +30,7 @@ typedef struct Vec3f32;
 #define VIEWSPACE_TO_WORLDSPACEY(x) (((x) + 1.0f) * (HEIGHT / 2.0f))
 #define VIEWSPACE_TO_WORLDSPACEX(x) (((x) + 1.0f) * (WIDTH / 2.0f))
 
+#define CAST_VEC4f32_TO_VEC3i32(v)  ((struct Vec3i32){v.x, v.y, v.z})
 #define CAST_VEC4f32_TO_VEC3f32(v)  ((struct Vec3f32){v.x, v.y, v.z})
 #define CAST_VEC3f32_TO_VEC2f32(v)  ((struct Vec2f32){v.x, v.y})
 
