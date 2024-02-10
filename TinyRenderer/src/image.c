@@ -102,7 +102,7 @@ void debugImageData(struct Image* image)
 }
 
 void fillTriangle(struct Image* image, struct Image* texture, struct Image* normalMap, struct Vec3i32 v0, struct Vec3i32 v1, struct Vec3i32 v2, struct Vec2f32 uv0, struct Vec2f32 uv1,
-                  struct Vec2f32 uv2, i32* zBuffer, struct Matrix4x4 m)
+                  struct Vec2f32 uv2, struct Vec3f32 n0, struct Vec3f32 n1, struct Vec3f32 n2, i32* zBuffer, struct Matrix4x4 m, struct Vec3f32 v0Proj, struct Vec3f32 v1Proj, struct Vec3f32 v2Proj)
 {
 
   i32 xMin      = MIN(MIN(v0.x, v1.x), v2.x);
@@ -139,19 +139,62 @@ void fillTriangle(struct Image* image, struct Image* texture, struct Image* norm
 
         i32            tu             = u * texture->width;
         i32            tv             = v * texture->height;
-        i32            tIdx           = (i32)(tu + tv * texture->width) * 4;
+        i32            uv             = (i32)(tu + tv * texture->width) * 4;
 
-        struct Vec3f32 normalColor    = {(f32)normalMap->data[tIdx + 2], (f32)normalMap->data[tIdx + 1], (f32)normalMap->data[tIdx + 0]};
-        // struct Vec3i32 normalProj     = MatrixToVec3f32(MatMul4x4(m, Vec3f32ToMatrix(normalColor)));
-        // struct Vec3f32 p              = {(f32)normalProj.x, (f32)normalProj.y, (f32)normalProj.z};
-        // normalizeVec3(&p);
-        normalizeVec3(&normalColor);
+        struct Matrix3x3 varyingNM = {
+          .i = {},
+          .j = {},
+          .k = {},
+        }
 
-        f32 intensity = dotProductVec3(normalColor, LIGHT_DIR);
+        struct Vec3f32 bn             = {
+            alpha * n0.x + beta * n1.x + gamma * n2.x, //
+            alpha * n0.y + beta * n1.y + gamma * n2.y, //
+            alpha * n0.z + beta * n1.z + gamma * n2.z  //
+        };
+        normalizeVec3(&bn);
+        printf("%d %d\n", x,y);
+        printf("bn: %lf %lf %lf\n", bn.x, bn.y, bn.z);
+
+        struct Matrix3x3 A = {
+            .i = {v1Proj.x - v0Proj.x, v1Proj.y - v0Proj.y, v1Proj.z - v0Proj.z}, //
+            .j = {v2Proj.x - v0Proj.x, v2Proj.y - v0Proj.y, v2Proj.z - v0Proj.z}, //
+            .k = {       bn.x,        bn.x,        bn.z}  //
+        };
+        printf("%lf %lf %lf\n", A.m[0][0], A.m[0][1], A.m[0][2]);
+        printf("%lf %lf %lf\n", A.m[1][0], A.m[1][1], A.m[1][2]);
+        printf("%lf %lf %lf\n", A.m[2][0], A.m[2][1], A.m[2][2]);
+        printf("---\n");
+
+        struct Matrix3x3 AI = invertMat3x3(A);
+        printf("%lf %lf %lf\n", AI.m[0][0], AI.m[0][1], AI.m[0][2]);
+        printf("%lf %lf %lf\n", AI.m[1][0], AI.m[1][1], AI.m[1][2]);
+        printf("%lf %lf %lf\n", AI.m[2][0], AI.m[2][1], AI.m[2][2]);
+        printf("---\n");
+        exit(1);
+
+        struct Vec3f32 i = MatVecMul3x3(AI, CREATE_VEC3f32(uv1.x - uv0.x, uv2.x - uv0.x, 0.0f));
+        struct Vec3f32 j = MatVecMul3x3(AI, CREATE_VEC3f32(uv1.y - uv0.y, uv2.y - uv0.y, 0.0f));
+
+        normalizeVec3(&i);
+        normalizeVec3(&j);
+
+        struct Matrix3x3 B = {
+            .i = { i.x,  i.y,  i.z}, //
+            .j = { j.x,  j.y,  j.z}, //
+            .k = {bn.x, bn.y, bn.z}  //
+        };
+
+        struct Vec3f32 uvVec3 = {u, v, 0.0f};
+        normalizeVec3(&uvVec3);
+        struct Vec3f32 n = MatVecMul3x3(B, uvVec3);
+        normalizeVec3(&n);
+
+        f32 intensity = dotProductVec3(n, LIGHT_DIR);
 
         if (intensity > 0)
         {
-          struct Vec4ui8 color = {texture->data[tIdx + 2] * intensity, texture->data[tIdx + 1] * intensity, texture->data[tIdx + 0] * intensity, 255};
+          struct Vec4ui8 color = {texture->data[uv + 2] * intensity, texture->data[uv + 1] * intensity, texture->data[uv + 0] * intensity, 255};
           setPixel(image, x, y, color);
         }
       }

@@ -40,10 +40,10 @@ int main()
   initImage(&image, WIDTH, HEIGHT, data);
 
   struct Image texture;
-  loadTarga(&texture, "./data/diablo3_pose_diffuse.tga");
+  loadTarga(&texture, "./data/african_head_diffuse.tga.tga");
 
   struct Image normalMap;
-  loadTarga(&normalMap, "./data/diablo3_pose_nm.tga");
+  loadTarga(&normalMap, "./data/african_head_nm_tangent.tga");
 
   // struct Image normalMapTangent;
   // loadTarga(&normalMapTangent, "./data/diablo3_pose_nm.tga");
@@ -51,7 +51,7 @@ int main()
   struct WavefrontObject obj;
 
   initWavefront(&obj);
-  parseWavefrontObject(&obj, "./data/diablo3_pose.obj");
+  parseWavefrontObject(&obj, "./data/african_head.obj");
 
   for (i32 i = 0; i < obj.faceCount; i++)
   {
@@ -72,13 +72,21 @@ int main()
     struct Vec2f32       t1                 = CAST_VEC3f32_TO_VEC2f32(textureCoordinates[faceVertex1.textureIdx - 1]);
     struct Vec2f32       t2                 = CAST_VEC3f32_TO_VEC2f32(textureCoordinates[faceVertex2.textureIdx - 1]);
 
+    struct Vec3f32       n0                 = normals[faceVertex0.normalIdx - 1];
+    struct Vec3f32       n1                 = normals[faceVertex1.normalIdx - 1];
+    struct Vec3f32       n2                 = normals[faceVertex2.normalIdx - 1];
+
+    struct Vec3f32       v0Projf32          = CAST_VEC4f32_TO_VEC3f32(MatVecMul4x4(projectionMatrix, MatVecMul4x4(modelView, CREATE_VEC4f32(v0.x, v0.y, v0.z, 1.0f))));
+    struct Vec3f32       v1Projf32          = CAST_VEC4f32_TO_VEC3f32(MatVecMul4x4(projectionMatrix, MatVecMul4x4(modelView, CREATE_VEC4f32(v1.x, v1.y, v1.z, 1.0f))));
+    struct Vec3f32       v2Projf32          = CAST_VEC4f32_TO_VEC3f32(MatVecMul4x4(projectionMatrix, MatVecMul4x4(modelView, CREATE_VEC4f32(v2.x, v2.y, v2.z, 1.0f))));
+
     struct Vec3i32       v0Proj             = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, MatMul4x4(modelView, Vec3f32ToMatrix(v0)))));
     struct Vec3i32       v1Proj             = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, MatMul4x4(modelView, Vec3f32ToMatrix(v1)))));
     struct Vec3i32       v2Proj             = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, MatMul4x4(modelView, Vec3f32ToMatrix(v2)))));
 
     struct Matrix4x4     viewProjModel      = MatMul4x4(viewport, MatMul4x4(projectionMatrix, modelView));
 
-    fillTriangle(&image, &texture, &normalMap, v0Proj, v1Proj, v2Proj, t0, t1, t2, zBuffer, viewProjModel);
+    fillTriangle(&image, &texture, &normalMap, v0Proj, v1Proj, v2Proj, t0, t1, t2, n0, n1, n2, zBuffer, viewProjModel, v0Projf32, v1Projf32, v2Projf32);
   }
 
   saveTarga(&image, "output2.tga");

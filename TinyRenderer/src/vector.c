@@ -2,6 +2,49 @@
 #include "common.h"
 #include <math.h>
 
+static f32 det2x2(f32 a00, f32 a01, f32 a10, f32 a11)
+{
+  return a00 * a11 - a01 * a10;
+}
+static f32 det3x3(struct Matrix3x3 m)
+{
+  return (m.m[0][0] * det2x2(m.m[1][1], m.m[1][2], m.m[2][1], m.m[2][2]) - //
+          m.m[0][1] * det2x2(m.m[1][0], m.m[1][2], m.m[2][0], m.m[2][2]) + //
+          m.m[0][2] * det2x2(m.m[1][0], m.m[1][1], m.m[2][0], m.m[2][1]));
+}
+
+static void scaleMatrix3x3(struct Matrix3x3* m, f32 scale)
+{
+  for (i32 i = 0; i < 3; i++)
+  {
+    for (i32 j = 0; j < 3; j++)
+    {
+      m->m[i][j] *= scale;
+    }
+  }
+}
+
+struct Matrix3x3 invertMat3x3(struct Matrix3x3 a)
+{
+  struct Matrix3x3 res = {
+      det2x2(a.j[1], a.j[2], a.k[1], a.k[2]), det2x2(a.i[2], a.i[1], a.k[2], a.k[1]), det2x2(a.i[1], a.i[2], a.j[1], a.j[2]), //
+      det2x2(a.j[2], a.j[0], a.k[2], a.k[1]), det2x2(a.i[0], a.i[2], a.k[0], a.k[2]), det2x2(a.i[2], a.i[0], a.j[2], a.j[0]), //
+      det2x2(a.j[0], a.j[1], a.k[0], a.k[1]), det2x2(a.i[1], a.i[0], a.k[1], a.k[0]), det2x2(a.i[0], a.i[1], a.j[0], a.j[1]), //
+  };
+  f32 scale = 1.0f / det3x3(res);
+  scaleMatrix3x3(&res, scale);
+  return res;
+}
+
+struct Vec3f32 MatVecMul3x3(struct Matrix3x3 m, struct Vec3f32 v)
+{
+  struct Vec3f32 res = {
+      .x = m.i[0] * v.x + m.i[1] * v.y + m.i[2] * v.z,
+      .y = m.j[0] * v.x + m.j[1] * v.y + m.j[2] * v.z,
+      .z = m.k[0] * v.x + m.k[1] * v.y + m.k[2] * v.z,
+  };
+  return res;
+}
 struct Vec3f32 VecMul3f32(struct Vec3f32 a, struct Vec3f32 b)
 {
   struct Vec3f32 res = {

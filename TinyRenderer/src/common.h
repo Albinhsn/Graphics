@@ -24,8 +24,8 @@ typedef struct Vec3f32;
 
 #define LIGHT_DIR                   ((struct Vec3f32){2.0f, -1.0f, 1.0f})
 
-#define WIDTH                       1000
-#define HEIGHT                      1000
+#define WIDTH                       800
+#define HEIGHT                      800
 
 #define VIEWSPACE_TO_WORLDSPACEY(x) (((x) + 1.0f) * (HEIGHT / 2.0f))
 #define VIEWSPACE_TO_WORLDSPACEX(x) (((x) + 1.0f) * (WIDTH / 2.0f))

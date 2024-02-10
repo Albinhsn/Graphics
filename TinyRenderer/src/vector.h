@@ -173,18 +173,36 @@ struct Matrix4x4
 {
   f32 m[4][4];
 };
+struct Matrix3x3
+{
+  union
+  {
+    f32 m[3][3];
+    struct
+    {
+      f32 i[3];
+      f32 j[3];
+      f32 k[3];
+    };
+  };
+};
 
 void             buildIdentityMatrix4x4(struct Matrix4x4* m);
 void             buildViewportMatrix4x4(struct Matrix4x4* m, i32 x, i32 y, i32 w, i32 h, i32 depth);
 
 struct Matrix4x4 lookAt(struct Vec3f32 eye, struct Vec3f32 center, struct Vec3f32 up);
 
-struct Vec3f32 VecMul3f32(struct Vec3f32 a, struct Vec3f32 b);
+struct Vec3f32   VecMul3f32(struct Vec3f32 a, struct Vec3f32 b);
 
+struct Matrix3x3 invertMat3x3(struct Matrix3x3 m);
+struct Matrix3x3 MatMul3x3(struct Matrix3x3 m1, struct Matrix3x3 m2);
 struct Matrix4x4 MatMul4x4(struct Matrix4x4 m1, struct Matrix4x4 m2);
-struct Matrix4x4 Vec3f32ToMatrix(struct Vec3f32 v);
-struct Vec3i32   MatrixToVec3f32(struct Matrix4x4 m);
 struct Vec4f32   MatVecMul4x4(struct Matrix4x4 mat, struct Vec4f32 vec);
+struct Vec3f32 MatVecMul3x3(struct Matrix3x3 m, struct Vec3f32 v);
+
+struct Vec3i32   MatrixToVec3f32(struct Matrix4x4 m);
+
+struct Matrix4x4 Vec3f32ToMatrix(struct Vec3f32 v);
 struct Vec3f32   vectorSubtraction(struct Vec3f32 a, struct Vec3f32 b);
 void             normalizeVec3(struct Vec3f32* v);
 f32              dotProductVec3(struct Vec3f32 a, struct Vec3f32 b);
