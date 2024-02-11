@@ -57,10 +57,10 @@ bool loadTarga(struct Image* image, const char* filename)
     printf("Dont't know how to parse targa image with bpp of '%d'\n", header.imagePixelSize);
     exit(2);
   }
-  ui8 bpp = 4;
+  u8 bpp = 4;
 
   // Allocate memory for the targa image data.
-  image->data = (ui8*)malloc(sizeof(ui8) * imageSize);
+  image->data = (u8*)malloc(sizeof(u8) * imageSize);
   for (i32 i = 0; i < 0; i++)
   {
     image->data[i] = 0;
@@ -84,22 +84,22 @@ bool loadTarga(struct Image* image, const char* filename)
     if (header.imagePixelSize == 24)
     {
       i32 imageIndex = 0;
-      ui8 byte;
+      u8 byte;
       while (imageIndex < imageSize)
       {
-        fread(&byte, 1, sizeof(ui8), filePtr);
+        fread(&byte, 1, sizeof(u8), filePtr);
 
-        ui8* curr = &image->data[imageIndex];
+        u8* curr = &image->data[imageIndex];
         if (curr[0] != 0)
         {
           printf("Overwrite at %d\n", imageIndex);
         }
         if (byte >= 128)
         {
-          ui8            repeated = byte - 127;
+          u8            repeated = byte - 127;
 
-          struct Vec3ui8 color;
-          fread(&color, 1, sizeof(struct Vec3ui8), filePtr);
+          struct Vec3u8 color;
+          fread(&color, 1, sizeof(struct Vec3u8), filePtr);
 
           for (i32 j = 0; j < repeated; j++)
           {
@@ -112,12 +112,12 @@ bool loadTarga(struct Image* image, const char* filename)
         }
         else
         {
-          ui8 repeated = byte + 1;
+          u8 repeated = byte + 1;
 
           for (i32 j = 0; j < repeated; j++)
           {
-            struct Vec3ui8 color;
-            fread(&color, 1, sizeof(struct Vec3ui8), filePtr);
+            struct Vec3u8 color;
+            fread(&color, 1, sizeof(struct Vec3u8), filePtr);
 
             curr[j * bpp + 0] = color.x;
             curr[j * bpp + 1] = color.y;
@@ -131,22 +131,22 @@ bool loadTarga(struct Image* image, const char* filename)
     else
     {
       i32 imageIndex = 0;
-      ui8 byte;
+      u8 byte;
       while (imageIndex < imageSize)
       {
-        fread(&byte, 1, sizeof(ui8), filePtr);
+        fread(&byte, 1, sizeof(u8), filePtr);
 
-        ui8* curr = &image->data[imageIndex];
+        u8* curr = &image->data[imageIndex];
         if (curr[0] != 0)
         {
           printf("Overwrite at %d\n", imageIndex);
         }
         if (byte >= 128)
         {
-          ui8            repeated = byte - 127;
+          u8            repeated = byte - 127;
 
-          struct Vec4ui8 color;
-          fread(&color, 1, sizeof(struct Vec4ui8), filePtr);
+          struct Vec4u8 color;
+          fread(&color, 1, sizeof(struct Vec4u8), filePtr);
 
           for (i32 j = 0; j < repeated; j++)
           {
@@ -159,12 +159,12 @@ bool loadTarga(struct Image* image, const char* filename)
         }
         else
         {
-          ui8 repeated = byte + 1;
+          u8 repeated = byte + 1;
 
           for (i32 j = 0; j < repeated; j++)
           {
-            struct Vec4ui8 color;
-            fread(&color, 1, sizeof(struct Vec4ui8), filePtr);
+            struct Vec4u8 color;
+            fread(&color, 1, sizeof(struct Vec4u8), filePtr);
 
             curr[j * bpp + 0] = color.x;
             curr[j * bpp + 1] = color.y;
@@ -185,9 +185,9 @@ bool loadTarga(struct Image* image, const char* filename)
   return true;
 }
 
-static ui8 skipWhitespace(const char* line)
+static u8 skipWhitespace(const char* line)
 {
-  ui8 curr = 0;
+  u8 curr = 0;
   while (curr < strlen(line) && !(isdigit(line[curr]) || (line[curr] == '-')))
   {
     curr++;
@@ -195,12 +195,12 @@ static ui8 skipWhitespace(const char* line)
   return curr;
 }
 
-static i32 parseIntFromString(const char* source, ui8* length)
+static i32 parseIntFromString(const char* source, u8* length)
 {
   char number[32];
   memset(number, 0, 32);
 
-  ui8 pos = 0;
+  u8 pos = 0;
   while (pos < strlen(source) && isdigit(source[pos]))
   {
     pos++;
@@ -210,10 +210,10 @@ static i32 parseIntFromString(const char* source, ui8* length)
   return atoi(number);
 }
 
-static f32 parseFloatFromString(const char* source, ui8* length)
+static f32 parseFloatFromString(const char* source, u8* length)
 {
   char number[32];
-  ui8  pos = 0;
+  u8  pos = 0;
 
   while (pos < strlen(source) && source[pos] != ' ')
   {
@@ -226,7 +226,7 @@ static f32 parseFloatFromString(const char* source, ui8* length)
 
 void initWavefront(struct WavefrontObject* obj)
 {
-  ui32 initCap                   = 8;
+  u32 initCap                   = 8;
   obj->vertexCount               = 0;
   obj->vertices                  = (struct Vec4f32*)malloc(sizeof(struct Vec4f32) * initCap);
   obj->vertexCapacity            = initCap;
@@ -268,8 +268,8 @@ static inline void resizeTextureCoordinates(struct WavefrontObject* obj)
 
 static void parseWavefrontTexture(struct WavefrontObject* obj, const char* line)
 {
-  ui8 step;
-  ui8 curr = 2 + skipWhitespace(&line[2]);
+  u8 step;
+  u8 curr = 2 + skipWhitespace(&line[2]);
   obj->textureCoordinateCount++;
   resizeTextureCoordinates(obj);
 
@@ -302,8 +302,8 @@ static inline void resizeNormals(struct WavefrontObject* obj)
 static void parseWavefrontNormal(struct WavefrontObject* obj, const char* line)
 {
 
-  ui8 step;
-  ui8 curr = 2 + skipWhitespace(&line[2]);
+  u8 step;
+  u8 curr = 2 + skipWhitespace(&line[2]);
   obj->normalCount++;
   resizeNormals(obj);
 
@@ -327,8 +327,8 @@ static inline void resizeVertices(struct WavefrontObject* obj)
 
 static void parseWavefrontVertex(struct WavefrontObject* obj, const char* line)
 {
-  ui8 step;
-  ui8 curr = 1 + skipWhitespace(&line[1]);
+  u8 step;
+  u8 curr = 1 + skipWhitespace(&line[1]);
   obj->vertexCount++;
   resizeVertices(obj);
 
@@ -360,7 +360,7 @@ static inline void resizeFaces(struct WavefrontObject* obj)
   }
 }
 
-static inline void resizeFaceVertexData(struct WavefrontFace* face, ui32* cap)
+static inline void resizeFaceVertexData(struct WavefrontFace* face, u32* cap)
 {
   if (face->vertexCount >= *cap)
   {
@@ -371,13 +371,13 @@ static inline void resizeFaceVertexData(struct WavefrontFace* face, ui32* cap)
 
 static void parseWavefrontFace(struct WavefrontObject* obj, const char* line)
 {
-  ui8 step;
-  ui8 curr = 1 + skipWhitespace(&line[1]);
+  u8 step;
+  u8 curr = 1 + skipWhitespace(&line[1]);
   obj->faceCount++;
   resizeFaces(obj);
 
   struct WavefrontFace* face      = &obj->faces[obj->faceCount - 1];
-  ui32                  vertexCap = 8;
+  u32                  vertexCap = 8;
   face->vertexCount               = 0;
   face->verticesData              = (struct VertexData*)malloc(sizeof(struct VertexData) * vertexCap);
   while (curr < strlen(line))
@@ -425,7 +425,7 @@ void parseWavefrontObject(struct WavefrontObject* obj, const char* filename)
 {
   FILE* filePtr;
   char* line = NULL;
-  ui64  len  = 0;
+  u64  len  = 0;
   i64   read;
 
   filePtr = fopen(filename, "r");
@@ -463,7 +463,7 @@ void saveTarga(struct Image* image, const char* filename)
     return;
   }
 
-  ui32 imageSize = 4 * image->width * image->height;
+  u32 imageSize = 4 * image->width * image->height;
 
   // Read in the targa image data.
   count = fwrite(image->data, 1, imageSize, filePtr);

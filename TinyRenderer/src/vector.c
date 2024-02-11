@@ -196,7 +196,17 @@ struct Matrix4x4 invertMat4x4(struct Matrix4x4 m)
   scaleMatrix4x4(&res, scale);
   return res;
 }
+struct Vec3f32 ProjectVec4ToVec3(struct Vec4f32 v){
+  struct Vec3f32 res = {v.x / v.w, v.y / v.w, v.z / v.w};
+  return res;
 
+}
+
+struct Vec4f32 MatrixToVec4f32(struct Matrix4x4 m)
+{
+  struct Vec4f32 res = {m.m[0][0], m.m[1][0], m.m[2][0], m.m[3][0]};
+  return res;
+}
 struct Vec3i32 MatrixToVec3i32(struct Matrix4x4 m)
 {
   f32            scale = m.m[3][0];
@@ -275,11 +285,12 @@ struct Matrix4x4 lookAt(struct Vec3f32 eye, struct Vec3f32 center, struct Vec3f3
   return MatMul4x4(minV, tr);
 }
 
-struct Matrix3x3 transposeMat3x3(struct Matrix3x3 m){
+struct Matrix3x3 transposeMat3x3(struct Matrix3x3 m)
+{
   struct Matrix3x3 res = {
-    .i = {m.i[0], m.j[0], m.k[0]}, // 
-    .j = {m.i[1], m.j[1], m.k[1]}, // 
-    .k = {m.i[2], m.j[2], m.k[2]}, // 
+      .i = {m.i[0], m.j[0], m.k[0]}, //
+      .j = {m.i[1], m.j[1], m.k[1]}, //
+      .k = {m.i[2], m.j[2], m.k[2]}, //
   };
   return res;
 }

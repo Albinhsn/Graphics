@@ -3,10 +3,10 @@
 
 #include <stdint.h>
 
-typedef uint8_t       ui8;
-typedef uint16_t      ui16;
-typedef uint32_t      ui32;
-typedef unsigned long ui64;
+typedef uint8_t       u8;
+typedef uint16_t      u16;
+typedef uint32_t      u32;
+typedef unsigned long u64;
 
 typedef float         f32;
 typedef double        f64;
@@ -22,10 +22,14 @@ typedef struct Vec3f32;
 #define MIN(x, y)                   (x < y ? x : y)
 #define MAX(x, y)                   (x < y ? y : x)
 
-#define LIGHT_DIR                   ((struct Vec3f32){1.0f, 1.0f, 1.0f})
+#define LIGHT_DIR                   ((struct Vec3f32){5.0f, 1.0f, 0.0f})
 
 #define WIDTH                       800
 #define HEIGHT                      800
+
+#define DEPTH                       255
+
+#define UP                          ((struct Vec3f32){0.0f, 1.0f, 0.0f})
 
 #define VIEWSPACE_TO_WORLDSPACEY(x) (((x) + 1.0f) * (HEIGHT / 2.0f))
 #define VIEWSPACE_TO_WORLDSPACEX(x) (((x) + 1.0f) * (WIDTH / 2.0f))

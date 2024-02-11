@@ -6,45 +6,45 @@
 #include <stdbool.h>
 
 struct VertexData {
-  ui32 vertexIdx;
-  ui32 textureIdx;
-  ui32 normalIdx;
+  u32 vertexIdx;
+  u32 textureIdx;
+  u32 normalIdx;
 };
 
 struct WavefrontFace {
   struct VertexData *verticesData;
-  ui32 vertexCount;
+  u32 vertexCount;
 };
 
 struct WavefrontObject {
-  ui32 vertexCount;
-  ui32 vertexCapacity;
+  u32 vertexCount;
+  u32 vertexCapacity;
   struct Vec4f32 *vertices;
-  ui32 textureCoordinateCount;
-  ui32 textureCoordinateCapacity;
+  u32 textureCoordinateCount;
+  u32 textureCoordinateCapacity;
   struct Vec3f32 *textureCoordinates;
-  ui32 normalCount;
-  ui32 normalCapacity;
+  u32 normalCount;
+  u32 normalCapacity;
   struct Vec3f32 *normals;
-  ui32 faceCount;
-  ui32 faceCapacity;
+  u32 faceCount;
+  u32 faceCapacity;
   struct WavefrontFace *faces;
 };
 
 struct TargaHeader {
   union {
-    ui8 header[18];
+    u8 header[18];
     struct {
-      ui8 charactersInIdentificationField;
-      ui8 colorMapType;
-      ui8 imageType;
-      ui8 colorMapSpec[5];
-      ui16 xOrigin;
-      ui16 yOrigin;
-      ui16 width;
-      ui16 height;
-      ui8 imagePixelSize;
-      ui8 imageDescriptor;
+      u8 charactersInIdentificationField;
+      u8 colorMapType;
+      u8 imageType;
+      u8 colorMapSpec[5];
+      u16 xOrigin;
+      u16 yOrigin;
+      u16 width;
+      u16 height;
+      u8 imagePixelSize;
+      u8 imageDescriptor;
     };
   };
 };

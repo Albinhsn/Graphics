@@ -11,24 +11,24 @@
 #define CREATE_VEC3f32(x, y, z)    ((struct Vec3f32){x, y, z})
 #define CREATE_VEC4f32(x, y, z, w) ((struct Vec4f32){x, y, z, w})
 
-struct Vec4ui8
+struct Vec4u8
 {
   union
   {
-    ui8 pos[4];
+    u8 pos[4];
     struct
     {
-      ui8 x;
-      ui8 y;
-      ui8 z;
-      ui8 w;
+      u8 x;
+      u8 y;
+      u8 z;
+      u8 w;
     };
     struct
     {
-      ui8 r;
-      ui8 g;
-      ui8 b;
-      ui8 a;
+      u8 r;
+      u8 g;
+      u8 b;
+      u8 a;
     };
   };
 };
@@ -55,22 +55,22 @@ struct Vec4f32
   };
 };
 
-struct Vec3ui32
+struct Vec3u32
 {
   union
   {
-    ui32 pos[3];
+    u32 pos[3];
     struct
     {
-      ui32 x;
-      ui32 y;
-      ui32 z;
+      u32 x;
+      u32 y;
+      u32 z;
     };
     struct
     {
-      ui32 r;
-      ui32 g;
-      ui32 b;
+      u32 r;
+      u32 g;
+      u32 b;
     };
   };
 };
@@ -142,29 +142,29 @@ struct Vec2i8
     };
   };
 };
-struct Vec3ui8
+struct Vec3u8
 {
   union
   {
-    ui8 pos[3];
+    u8 pos[3];
     struct
     {
-      ui8 x;
-      ui8 y;
-      ui8 z;
+      u8 x;
+      u8 y;
+      u8 z;
     };
   };
 };
 
-struct Vec2ui8
+struct Vec2u8
 {
   union
   {
-    ui8 pos[2];
+    u8 pos[2];
     struct
     {
-      ui8 x;
-      ui8 y;
+      u8 x;
+      u8 y;
     };
   };
 };
@@ -211,6 +211,9 @@ struct Matrix4x4 lookAt(struct Vec3f32 eye, struct Vec3f32 center, struct Vec3f3
 
 struct Vec3f32   VecMul3f32(struct Vec3f32 a, struct Vec3f32 b);
 
+struct Vec3f32 ProjectVec4ToVec3(struct Vec4f32 v);
+
+
 struct Matrix4x4 invertMat4x4(struct Matrix4x4 m);
 struct Matrix4x4 transposeMat4x4(struct Matrix4x4 m);
 struct Matrix3x3 transposeMat3x3(struct Matrix3x3 m);
@@ -220,6 +223,7 @@ struct Matrix4x4 MatMul4x4(struct Matrix4x4 m1, struct Matrix4x4 m2);
 struct Vec4f32   MatVecMul4x4(struct Matrix4x4 mat, struct Vec4f32 vec);
 struct Vec3f32   MatVecMul3x3(struct Matrix3x3 m, struct Vec3f32 v);
 
+struct Vec4f32   MatrixToVec4f32(struct Matrix4x4 m);
 struct Vec3f32   MatrixToVec3f32(struct Matrix4x4 m);
 struct Vec3i32   MatrixToVec3i32(struct Matrix4x4 m);
 

@@ -3,9 +3,8 @@
 #include "vector.h"
 #include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>
 
-static inline void setPixel(struct Image* image, ui16 x, ui16 y, struct Vec4ui8 color)
+static inline void setPixel(struct Image* image, u16 x, u16 y, struct Vec4u8 color)
 {
   i32 idxOffset              = (y * image->width + x) * 4;
   image->data[idxOffset + 0] = color.b;
@@ -25,7 +24,7 @@ static inline i16 absi16(i16 x)
   return x < 0 ? -x : x;
 }
 
-void setLine(struct Image* image, ui16 x0, ui16 y0, ui16 x1, ui16 y1, struct Vec4ui8 color)
+void setLine(struct Image* image, u16 x0, u16 y0, u16 x1, u16 y1, struct Vec4u8 color)
 {
 
   bool steep = absi16(x0 - x1) < absi16(y0 - y1);
@@ -73,7 +72,7 @@ void setLine(struct Image* image, ui16 x0, ui16 y0, ui16 x1, ui16 y1, struct Vec
   }
 }
 
-void initImage(struct Image* image, ui16 width, ui16 height, ui8* data)
+void initImage(struct Image* image, u16 width, u16 height, u8* data)
 {
 
   image->width  = width;
@@ -102,34 +101,26 @@ void debugImageData(struct Image* image)
   }
 }
 
-void fillTriangle(struct Image* image, struct Image* texture, struct Image* normalMap, struct Vec3f32 v0, struct Vec3f32 v1, struct Vec3f32 v2, struct Vec2f32 uv0, struct Vec2f32 uv1,
-                  struct Vec2f32 uv2, struct Vec3f32 n0, struct Vec3f32 n1, struct Vec3f32 n2, i32* zBuffer, struct Matrix4x4 viewport, struct Matrix4x4 projectionMatrix, struct Matrix4x4 modelView)
+void fillShadowBuffer(struct Image* shadowBuffer, struct Vec3f32 v0, struct Vec3f32 v1, struct Vec3f32 v2, struct Matrix4x4 viewport, struct Matrix4x4 projectionMatrix, struct Matrix4x4 modelView,
+                      struct Vec3f32 center, i32* zBuffer)
 {
-  struct Vec3f32   v0Proj         = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, MatMul4x4(modelView, Vec3f32ToMatrix(v0)))));
-  struct Vec3f32   v1Proj         = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, MatMul4x4(modelView, Vec3f32ToMatrix(v1)))));
-  struct Vec3f32   v2Proj         = MatrixToVec3f32(MatMul4x4(viewport, MatMul4x4(projectionMatrix, MatMul4x4(modelView, Vec3f32ToMatrix(v2)))));
 
-  struct Matrix4x4 m1             = invertMat4x4(MatMul4x4(projectionMatrix, modelView));
+  struct Matrix4x4 projModel = MatMul4x4(projectionMatrix, modelView);
+  struct Matrix4x4 M         = MatMul4x4(viewport, projModel);
 
-  struct Vec4f32   n0v            = MatVecMul4x4(m1, CREATE_VEC4f32(n0.x, n0.y, n0.z, 0.0f));
-  struct Vec3f32   n0Proj         = CAST_VEC4f32_TO_VEC3f32(n0v);
-  struct Vec3f32   n1Proj         = CAST_VEC4f32_TO_VEC3f32(MatVecMul4x4(m1, CREATE_VEC4f32(n1.x, n1.y, n1.z, 0.0f)));
-  struct Vec3f32   n2Proj         = CAST_VEC4f32_TO_VEC3f32(MatVecMul4x4(m1, CREATE_VEC4f32(n2.x, n2.y, n2.z, 0.0f)));
+  struct Vec3f32   v0Proj    = ProjectVec4ToVec3(MatVecMul4x4(M, CREATE_VEC4f32(v0.x, v0.y, v0.z, 1.0f)));
+  struct Vec3f32   v1Proj    = ProjectVec4ToVec3(MatVecMul4x4(M, CREATE_VEC4f32(v1.x, v1.y, v1.z, 1.0f)));
+  struct Vec3f32   v2Proj    = ProjectVec4ToVec3(MatVecMul4x4(M, CREATE_VEC4f32(v2.x, v2.y, v2.z, 1.0f)));
 
-  struct Vec4f32   modelViewVert0 = MatVecMul4x4(modelView, CREATE_VEC4f32(v0.x, v0.y, v0.z, 1.0f));
-  struct Vec4f32   glVertex0      = MatVecMul4x4(projectionMatrix, modelViewVert0);
-  struct Vec4f32   glVertex1      = MatVecMul4x4(projectionMatrix, (MatVecMul4x4(modelView, CREATE_VEC4f32(v1.x, v1.y, v1.z, 1.0f))));
-  struct Vec4f32   glVertex2      = MatVecMul4x4(projectionMatrix, (MatVecMul4x4(modelView, CREATE_VEC4f32(v2.x, v2.y, v2.z, 1.0f))));
+  struct Vec4f32   glVertex0 = MatVecMul4x4(projModel, CREATE_VEC4f32(v0.x, v0.y, v0.z, 1.0f));
+  struct Vec4f32   glVertex1 = MatVecMul4x4(projModel, CREATE_VEC4f32(v1.x, v1.y, v1.z, 1.0f));
+  struct Vec4f32   glVertex2 = MatVecMul4x4(projModel, CREATE_VEC4f32(v2.x, v2.y, v2.z, 1.0f));
 
-  struct Vec3f32   ndc_tri0       = CREATE_VEC3f32(glVertex0.x / glVertex0.w, glVertex0.y / glVertex0.w, glVertex0.z / glVertex0.w);
-  struct Vec3f32   ndc_tri1       = CREATE_VEC3f32(glVertex1.x / glVertex1.w, glVertex1.y / glVertex1.w, glVertex1.z / glVertex1.w);
-  struct Vec3f32   ndc_tri2       = CREATE_VEC3f32(glVertex2.x / glVertex2.w, glVertex2.y / glVertex2.w, glVertex2.z / glVertex2.w);
+  i32              xMin      = MIN(MIN(v0Proj.x, v1Proj.x), v2Proj.x);
+  i32              yMin      = MIN(MIN(v0Proj.y, v1Proj.y), v2Proj.y);
 
-  i32              xMin           = MIN(MIN(v0Proj.x, v1Proj.x), v2Proj.x);
-  i32              yMin           = MIN(MIN(v0Proj.y, v1Proj.y), v2Proj.y);
-
-  i32              xMax           = MAX(MAX(v0Proj.x, v1Proj.x), v2Proj.x);
-  i32              yMax           = MAX(MAX(v0Proj.y, v1Proj.y), v2Proj.y);
+  i32              xMax      = MAX(MAX(v0Proj.x, v1Proj.x), v2Proj.x);
+  i32              yMax      = MAX(MAX(v0Proj.y, v1Proj.y), v2Proj.y);
 
   for (i32 x = xMin; x <= xMax; x++)
   {
@@ -155,6 +146,73 @@ void fillTriangle(struct Image* image, struct Image* texture, struct Image* norm
 
       i32  z                   = alpha * v0Proj.z + beta * v1Proj.z + gamma * v2Proj.z;
 
+      if (inside && zBuffer[y * shadowBuffer->width + x] < z)
+      {
+        zBuffer[y * shadowBuffer->width + x] = z;
+
+        struct Matrix3x3 m                   = {
+                              .i = {v0Proj.x, v1Proj.x, v2Proj.x}, //
+                              .j = {v0Proj.y, v1Proj.y, v2Proj.y},
+                              .k = {v0Proj.z, v1Proj.z, v2Proj.z}
+        };
+        struct Vec3f32 p     = MatVecMul3x3(m, CREATE_VEC3f32(alpha, beta, gamma));
+        struct Vec4u8  color = {255 * p.z / DEPTH, 255 * p.z / DEPTH, 255 * p.z / DEPTH, 255};
+        setPixel(shadowBuffer, x, y, color);
+      }
+    }
+  }
+}
+
+void fillTriangle(struct Image* image, struct Image* texture, struct Image* normalMap, struct Vec3f32 v0, struct Vec3f32 v1, struct Vec3f32 v2, struct Vec2f32 uv0, struct Vec2f32 uv1,
+                  struct Vec2f32 uv2, struct Vec3f32 n0, struct Vec3f32 n1, struct Vec3f32 n2, i32* zBuffer, struct Matrix4x4 viewport, struct Matrix4x4 projectionMatrix, struct Matrix4x4 modelView,
+                  u8* shadowBuffer, struct Matrix4x4 shadowMatrix)
+{
+
+  struct Matrix4x4 projModel    = MatMul4x4(projectionMatrix, modelView);
+  struct Matrix4x4 M            = MatMul4x4(viewport, projModel);
+  struct Matrix4x4 invProjModel = invertMat4x4(projModel);
+
+  struct Vec3f32   v0Proj       = ProjectVec4ToVec3(MatVecMul4x4(M, CREATE_VEC4f32(v0.x, v0.y, v0.z, 1.0f)));
+  struct Vec3f32   v1Proj       = ProjectVec4ToVec3(MatVecMul4x4(M, CREATE_VEC4f32(v1.x, v1.y, v1.z, 1.0f)));
+  struct Vec3f32   v2Proj       = ProjectVec4ToVec3(MatVecMul4x4(M, CREATE_VEC4f32(v2.x, v2.y, v2.z, 1.0f)));
+
+  struct Vec3f32   n0Proj       = CAST_VEC4f32_TO_VEC3f32(MatVecMul4x4(invProjModel, CREATE_VEC4f32(n0.x, n0.y, n0.z, 0.0f)));
+  struct Vec3f32   n1Proj       = CAST_VEC4f32_TO_VEC3f32(MatVecMul4x4(invProjModel, CREATE_VEC4f32(n1.x, n1.y, n1.z, 0.0f)));
+  struct Vec3f32   n2Proj       = CAST_VEC4f32_TO_VEC3f32(MatVecMul4x4(invProjModel, CREATE_VEC4f32(n2.x, n2.y, n2.z, 0.0f)));
+
+  struct Vec4f32   glVertex0    = MatVecMul4x4(projModel, CREATE_VEC4f32(v0.x, v0.y, v0.z, 1.0f));
+  struct Vec4f32   glVertex1    = MatVecMul4x4(projModel, CREATE_VEC4f32(v1.x, v1.y, v1.z, 1.0f));
+  struct Vec4f32   glVertex2    = MatVecMul4x4(projModel, CREATE_VEC4f32(v2.x, v2.y, v2.z, 1.0f));
+
+  struct Vec3f32   ndc_tri0     = ProjectVec4ToVec3(glVertex0);
+  struct Vec3f32   ndc_tri1     = ProjectVec4ToVec3(glVertex1);
+  struct Vec3f32   ndc_tri2     = ProjectVec4ToVec3(glVertex2);
+
+  i32              xMin         = MIN(MIN(v0Proj.x, v1Proj.x), v2Proj.x);
+  i32              yMin         = MIN(MIN(v0Proj.y, v1Proj.y), v2Proj.y);
+
+  i32              xMax         = MAX(MAX(v0Proj.x, v1Proj.x), v2Proj.x);
+  i32              yMax         = MAX(MAX(v0Proj.y, v1Proj.y), v2Proj.y);
+
+  f32              totalArea    = crossProduct2Df32(CREATE_VEC2f32(v1Proj.x, v1Proj.y), CREATE_VEC2f32(v2Proj.x, v2Proj.y), CREATE_VEC2f32(v0Proj.x, v0Proj.y));
+
+  for (i32 x = xMin; x <= xMax; x++)
+  {
+
+    for (i32 y = yMin; y <= yMax; y++)
+    {
+      f32  w0     = crossProduct2Df32(CREATE_VEC2f32(v1Proj.x, v1Proj.y), CREATE_VEC2f32(v2Proj.x, v2Proj.y), CREATE_VEC2f32(x, y));
+      f32  w1     = crossProduct2Df32(CREATE_VEC2f32(v2Proj.x, v2Proj.y), CREATE_VEC2f32(v0Proj.x, v0Proj.y), CREATE_VEC2f32(x, y));
+      f32  w2     = crossProduct2Df32(CREATE_VEC2f32(v0Proj.x, v0Proj.y), CREATE_VEC2f32(v1Proj.x, v1Proj.y), CREATE_VEC2f32(x, y));
+
+      f32  alpha  = w0 / totalArea;
+      f32  beta   = w1 / totalArea;
+      f32  gamma  = w2 / totalArea;
+
+      bool inside = w0 >= 0 && w1 >= 0 && w2 >= 0;
+
+      i32  z      = alpha * v0Proj.z + beta * v1Proj.z + gamma * v2Proj.z;
+
       if (inside && zBuffer[y * image->width + x] < z)
       {
         zBuffer[y * image->width + x] = z;
@@ -163,8 +221,8 @@ void fillTriangle(struct Image* image, struct Image* texture, struct Image* norm
 
         i32 tu                        = u * texture->width;
         i32 tv                        = v * texture->height;
-        // uv idx
-        i32 uv = (i32)(tu + tv * texture->width) * 4;
+
+        i32 uv                        = (i32)(tu + tv * texture->width) * 4;
 
         // bn
         struct Vec3f32 bn = {
@@ -196,16 +254,29 @@ void fillTriangle(struct Image* image, struct Image* texture, struct Image* norm
         struct Vec3f32 n      = MatVecMul3x3(B, normal);
         normalizeVec3(&n);
 
-        struct Vec3f32 projLight = CAST_VEC4f32_TO_VEC3f32(MatVecMul4x4(projectionMatrix, MatVecMul4x4(modelView, CREATE_VEC4f32(LIGHT_DIR.x, LIGHT_DIR.y, LIGHT_DIR.z, 0.0f))));
+        struct Vec3f32 projLight = CAST_VEC4f32_TO_VEC3f32(MatVecMul4x4(projModel, CREATE_VEC4f32(LIGHT_DIR.x, LIGHT_DIR.y, LIGHT_DIR.z, 0.0f)));
         normalizeVec3(&projLight);
 
-        f32 intensity = dotProductVec3(n, projLight);
-        intensity     = intensity < 0 ? 0 : intensity;
-        if (intensity > 0)
-        {
-          struct Vec4ui8 color = {texture->data[uv + 2] * intensity, texture->data[uv + 1] * intensity, texture->data[uv + 0] * intensity, 255};
-          setPixel(image, x, y, color);
-        }
+        f32 intensity       = dotProductVec3(n, projLight);
+        intensity           = intensity < 0 ? 0 : intensity;
+
+        struct Matrix3x3 vM = {
+            .i = {v0Proj.x, v1Proj.x, v2Proj.x},
+            .j = {v0Proj.y, v1Proj.y, v2Proj.y},
+            .k = {v0Proj.z, v1Proj.z, v2Proj.z},
+        };
+        struct Vec3f32 vBar              = MatVecMul3x3(vM, CREATE_VEC3f32(alpha, beta, gamma));
+        struct Vec4f32 shadowCoordinates = MatVecMul4x4(shadowMatrix, CREATE_VEC4f32(vBar.x, vBar.y, vBar.z, 1.0f));
+        struct Vec3f32 shadowCoords      = ProjectVec4ToVec3(shadowCoordinates);
+
+        i32            shadowIdx         = ((i32)shadowCoords.x) + ((i32)shadowCoords.y) * texture->width;
+        f32            shadow            = 0.15f + 0.7f * (shadowBuffer[shadowIdx] < shadowCoords.z);
+
+        struct Vec4u8  color             = {texture->data[uv + 2], texture->data[uv + 1], texture->data[uv + 0], 255};
+        color.x                          = color.x * shadow + color.x * intensity;
+        color.y                          = color.y * shadow + color.y * intensity;
+        color.z                          = color.z * shadow + color.z * intensity;
+        setPixel(image, x, y, color);
       }
     }
   }
