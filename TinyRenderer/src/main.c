@@ -4,7 +4,6 @@
 #include "lodepng.h"
 #include "vector.h"
 #include <limits.h>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -34,14 +33,20 @@ int main()
   initWavefront(&obj);
   parseWavefrontObject(&obj, "./diablo3_pose/diablo3_pose.obj");
 
-  i32*           zBuffer          = (i32*)malloc(sizeof(i32) * WIDTH * HEIGHT);
-  u8*            shadowBufferData = (u8*)malloc(sizeof(u8) * WIDTH * HEIGHT * 4);
-  i32*           zTextureBuffer   = (i32*)malloc(sizeof(i32) * WIDTH * HEIGHT);
-  for(i32 i = 0; i < WIDTH * HEIGHT; i++){
+  i32* zBuffer          = (i32*)malloc(sizeof(i32) * WIDTH * HEIGHT);
+  u8*  shadowBufferData = (u8*)malloc(sizeof(u8) * WIDTH * HEIGHT * 4);
+  i32* zTextureBuffer   = (i32*)malloc(sizeof(i32) * WIDTH * HEIGHT);
+  i32* zTextureBuffer2  = (i32*)malloc(sizeof(i32) * WIDTH * HEIGHT);
+  for (i32 i = 0; i < WIDTH * HEIGHT; i++)
+  {
     zTextureBuffer[i] = 0;
   }
+  for (i32 i = 0; i < WIDTH * HEIGHT; i++)
+  {
+    zTextureBuffer2[i] = 0;
+  }
 
-  struct Vec3f32 center           = {0.0f, 0.0f, 0.0f};
+  struct Vec3f32 center = {0.0f, 0.0f, 0.0f};
 
   struct Image   shadowBuffer;
   initImage(&shadowBuffer, WIDTH, HEIGHT, shadowBufferData);
@@ -66,10 +71,14 @@ int main()
       shadowBufferData[i * 4 + 2] = 0;
       shadowBufferData[i * 4 + 3] = 255;
     }
+    for (i32 i = 0; i < WIDTH * HEIGHT; i++)
+    {
+      zTextureBuffer[i] = 0;
+    }
     printf("Sim: %d\n", sims);
     // Should be randomized
     struct Vec3f32 eye = randomPointOnSphere();
-    eye.y = eye.y < 0 ? -eye.y : eye.y;
+    eye.y              = eye.y < 0 ? -eye.y : eye.y;
 
     up.x               = (f32)rand() / (f32)RAND_MAX;
     up.y               = (f32)rand() / (f32)RAND_MAX;
@@ -116,8 +125,12 @@ int main()
       struct Vec2f32       t1          = CAST_VEC3f32_TO_VEC2f32(textureCoordinates[faceVertex1.textureIdx - 1]);
       struct Vec2f32       t2          = CAST_VEC3f32_TO_VEC2f32(textureCoordinates[faceVertex2.textureIdx - 1]);
 
-
       fillZTexture(&shadowBuffer, zBuffer, zTextureBuffer, v0, v1, v2, t0, t1, t2, viewport, projectionMatrix, modelView);
+    }
+
+    for (i32 i = 0; i < shadowBuffer.width * shadowBuffer.height; i++)
+    {
+      zTextureBuffer2[i] += zTextureBuffer[i];
     }
   }
 
@@ -129,10 +142,12 @@ int main()
   for (i32 i = 0; i < shadowBuffer.width * shadowBuffer.height; i++)
   {
 
-    i32 res = (f32)zTextureBuffer[i] / ((f32)totalSims / 2.0f);
-    if (res > 255)
-    {
-      res = 255;
+    i32 res               = zTextureBuffer2[i] / totalSims;
+    if(res > 255){
+      printf("%d\n", res);
+    }
+    if(res > 0 && res < 70){
+        res += 25;
     }
     image.data[i * 4 + 0] = res;
     image.data[i * 4 + 1] = res;

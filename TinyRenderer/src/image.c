@@ -4,7 +4,6 @@
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 static inline void setPixel(struct Image* image, u16 x, u16 y, struct Vec4u8 color)
 {
@@ -144,13 +143,13 @@ void fillZTexture(struct Image* shadowBuffer, i32* zBuffer, i32* zTexture, struc
 
       if (inside && zBuffer[y * shadowBuffer->width + x] == z)
       {
-        f32 u  = (alpha * uv0.x + beta * uv1.x + gamma * uv2.x);
-        f32 v  = (alpha * uv0.y + beta * uv1.y + gamma * uv2.y);
+        f32 u                                   = (alpha * uv0.x + beta * uv1.x + gamma * uv2.x);
+        f32 v                                   = (alpha * uv0.y + beta * uv1.y + gamma * uv2.y);
 
-        i32 tu = u * shadowBuffer->width;
-        i32 tv = v * shadowBuffer->height;
+        i32 tu                                  = u * shadowBuffer->width;
+        i32 tv                                  = v * shadowBuffer->height;
 
-        zTexture[tu + tv * shadowBuffer->width] += shadowBuffer->data[x + shadowBuffer->width * y];
+        zTexture[tu + tv * shadowBuffer->width] = 255;
       }
     }
   }
