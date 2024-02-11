@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -g -lm -pg -ggdb -O2 -std=c11 -Wall -Wno-missing-braces
+CFLAGS := -g -lm -pg -ggdb -O0 -std=c11 -Wall -Wno-missing-braces
 TARGET := main 
 
 SRCS = $(wildcard src/*.c)

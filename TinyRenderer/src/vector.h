@@ -212,6 +212,7 @@ struct Matrix4x4 lookAt(struct Vec3f32 eye, struct Vec3f32 center, struct Vec3f3
 struct Vec3f32   VecMul3f32(struct Vec3f32 a, struct Vec3f32 b);
 
 struct Vec3f32 ProjectVec4ToVec3(struct Vec4f32 v);
+struct Vec2f32 ProjectVec3ToVec2(struct Vec3f32 v);
 
 
 struct Matrix4x4 invertMat4x4(struct Matrix4x4 m);
@@ -239,5 +240,5 @@ i32              crossProduct2D(struct Vec2i32 v0, struct Vec2i32 v1, struct Vec
 struct Vec3f32   crossProduct3D(struct Vec3f32 a, struct Vec3f32 b);
 i32              crossProduct3DVector(struct Vec3i32 a, struct Vec3i32 b, struct Vec3i32 p);
 
-struct Vec4f32   matMul(struct Vec4f32 a, struct Vec4f32 b);
+struct Vec3f32 randomPointOnSphere();
 #endif

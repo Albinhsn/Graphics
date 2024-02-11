@@ -2,6 +2,18 @@
 #include "common.h"
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+struct Vec3f32 randomPointOnSphere()
+{
+
+  float          u     = (float)rand() / (float)RAND_MAX;
+  float          v     = (float)rand() / (float)RAND_MAX;
+  float          theta = 2.f * PI * u;
+  float          phi   = acos(2.f * v - 1.f);
+  struct Vec3f32 res   = {sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi)};
+  return res;
+}
 
 static f32 det2x2(f32 a00, f32 a01, f32 a10, f32 a11)
 {
@@ -196,10 +208,14 @@ struct Matrix4x4 invertMat4x4(struct Matrix4x4 m)
   scaleMatrix4x4(&res, scale);
   return res;
 }
-struct Vec3f32 ProjectVec4ToVec3(struct Vec4f32 v){
+struct Vec2f32 ProjectVec3ToVec2(struct Vec3f32 v){
+  struct Vec2f32 res = {v.x / v.z, v.y / v.z};
+  return res;
+}
+struct Vec3f32 ProjectVec4ToVec3(struct Vec4f32 v)
+{
   struct Vec3f32 res = {v.x / v.w, v.y / v.w, v.z / v.w};
   return res;
-
 }
 
 struct Vec4f32 MatrixToVec4f32(struct Matrix4x4 m)

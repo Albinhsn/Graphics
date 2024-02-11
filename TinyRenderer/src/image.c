@@ -1,8 +1,10 @@
 #include "image.h"
 #include "common.h"
 #include "vector.h"
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 static inline void setPixel(struct Image* image, u16 x, u16 y, struct Vec4u8 color)
 {
@@ -101,62 +103,109 @@ void debugImageData(struct Image* image)
   }
 }
 
-void fillShadowBuffer(struct Image* shadowBuffer, struct Vec3f32 v0, struct Vec3f32 v1, struct Vec3f32 v2, struct Matrix4x4 viewport, struct Matrix4x4 projectionMatrix, struct Matrix4x4 modelView,
-                      struct Vec3f32 center, i32* zBuffer)
+void fillZTexture(struct Image* shadowBuffer, i32* zBuffer, i32* zTexture, struct Vec3f32 v0, struct Vec3f32 v1, struct Vec3f32 v2, struct Vec2f32 uv0, struct Vec2f32 uv1, struct Vec2f32 uv2,
+                  struct Matrix4x4 viewport, struct Matrix4x4 projectionMatrix, struct Matrix4x4 modelView)
 {
 
-  struct Matrix4x4 projModel = MatMul4x4(projectionMatrix, modelView);
-  struct Matrix4x4 M         = MatMul4x4(viewport, projModel);
+  struct Matrix4x4 M         = MatMul4x4(viewport, modelView);
 
   struct Vec3f32   v0Proj    = ProjectVec4ToVec3(MatVecMul4x4(M, CREATE_VEC4f32(v0.x, v0.y, v0.z, 1.0f)));
   struct Vec3f32   v1Proj    = ProjectVec4ToVec3(MatVecMul4x4(M, CREATE_VEC4f32(v1.x, v1.y, v1.z, 1.0f)));
   struct Vec3f32   v2Proj    = ProjectVec4ToVec3(MatVecMul4x4(M, CREATE_VEC4f32(v2.x, v2.y, v2.z, 1.0f)));
 
-  struct Vec4f32   glVertex0 = MatVecMul4x4(projModel, CREATE_VEC4f32(v0.x, v0.y, v0.z, 1.0f));
-  struct Vec4f32   glVertex1 = MatVecMul4x4(projModel, CREATE_VEC4f32(v1.x, v1.y, v1.z, 1.0f));
-  struct Vec4f32   glVertex2 = MatVecMul4x4(projModel, CREATE_VEC4f32(v2.x, v2.y, v2.z, 1.0f));
+  struct Vec4f32   glVertex0 = MatVecMul4x4(modelView, CREATE_VEC4f32(v0.x, v0.y, v0.z, 1.0f));
+  struct Vec4f32   glVertex1 = MatVecMul4x4(modelView, CREATE_VEC4f32(v1.x, v1.y, v1.z, 1.0f));
+  struct Vec4f32   glVertex2 = MatVecMul4x4(modelView, CREATE_VEC4f32(v2.x, v2.y, v2.z, 1.0f));
 
-  i32              xMin      = MIN(MIN(v0Proj.x, v1Proj.x), v2Proj.x);
-  i32              yMin      = MIN(MIN(v0Proj.y, v1Proj.y), v2Proj.y);
+  i32              xMin      = ceil(MIN(MIN(v0Proj.x, v1Proj.x), v2Proj.x));
+  i32              yMin      = ceil(MIN(MIN(v0Proj.y, v1Proj.y), v2Proj.y));
 
-  i32              xMax      = MAX(MAX(v0Proj.x, v1Proj.x), v2Proj.x);
-  i32              yMax      = MAX(MAX(v0Proj.y, v1Proj.y), v2Proj.y);
+  i32              xMax      = floor(MAX(MAX(v0Proj.x, v1Proj.x), v2Proj.x));
+  i32              yMax      = floor(MAX(MAX(v0Proj.y, v1Proj.y), v2Proj.y));
+
+  f32              totalArea = crossProduct2Df32(CREATE_VEC2f32(v1Proj.x, v1Proj.y), CREATE_VEC2f32(v2Proj.x, v2Proj.y), CREATE_VEC2f32(v0Proj.x, v0Proj.y));
 
   for (i32 x = xMin; x <= xMax; x++)
   {
 
     for (i32 y = yMin; y <= yMax; y++)
     {
-      struct Vec2i32 point     = {x, y};
+      f32  w0     = crossProduct2Df32(CREATE_VEC2f32(v1Proj.x, v1Proj.y), CREATE_VEC2f32(v2Proj.x, v2Proj.y), CREATE_VEC2f32(x, y));
+      f32  w1     = crossProduct2Df32(CREATE_VEC2f32(v2Proj.x, v2Proj.y), CREATE_VEC2f32(v0Proj.x, v0Proj.y), CREATE_VEC2f32(x, y));
+      f32  w2     = crossProduct2Df32(CREATE_VEC2f32(v0Proj.x, v0Proj.y), CREATE_VEC2f32(v1Proj.x, v1Proj.y), CREATE_VEC2f32(x, y));
 
-      f32            w0        = crossProduct2Df32(CREATE_VEC2f32(v1Proj.x, v1Proj.y), CREATE_VEC2f32(v2Proj.x, v2Proj.y), CREATE_VEC2f32(point.x, point.y));
-      f32            w1        = crossProduct2Df32(CREATE_VEC2f32(v2Proj.x, v2Proj.y), CREATE_VEC2f32(v0Proj.x, v0Proj.y), CREATE_VEC2f32(point.x, point.y));
-      f32            w2        = crossProduct2Df32(CREATE_VEC2f32(v0Proj.x, v0Proj.y), CREATE_VEC2f32(v1Proj.x, v1Proj.y), CREATE_VEC2f32(point.x, point.y));
+      f32  alpha  = w0 / totalArea;
+      f32  beta   = w1 / totalArea;
+      f32  gamma  = w2 / totalArea;
 
-      f32            alpha     = w0 / glVertex0.w;
-      f32            beta      = w1 / glVertex1.w;
-      f32            gamma     = w2 / glVertex2.w;
+      bool inside = w0 >= 0 && w1 >= 0 && w2 >= 0;
 
-      f32            totalArea = alpha + beta + gamma;
-      alpha                    = alpha / totalArea;
-      beta                     = beta / totalArea;
-      gamma                    = gamma / totalArea;
+      i32  z      = alpha * v0Proj.z + beta * v1Proj.z + gamma * v2Proj.z;
 
-      bool inside              = w0 >= 0 && w1 >= 0 && w2 >= 0;
+      if (inside && zBuffer[y * shadowBuffer->width + x] == z)
+      {
+        f32 u  = (alpha * uv0.x + beta * uv1.x + gamma * uv2.x);
+        f32 v  = (alpha * uv0.y + beta * uv1.y + gamma * uv2.y);
 
-      i32  z                   = alpha * v0Proj.z + beta * v1Proj.z + gamma * v2Proj.z;
+        i32 tu = u * shadowBuffer->width;
+        i32 tv = v * shadowBuffer->height;
+
+        zTexture[tu + tv * shadowBuffer->width] += shadowBuffer->data[x + shadowBuffer->width * y];
+      }
+    }
+  }
+}
+
+void fillShadowBuffer(struct Image* shadowBuffer, struct Vec3f32 v0, struct Vec3f32 v1, struct Vec3f32 v2, struct Matrix4x4 viewport, struct Matrix4x4 projectionMatrix, struct Matrix4x4 modelView,
+                      struct Vec3f32 center, i32* zBuffer)
+{
+
+  struct Matrix4x4 M         = MatMul4x4(viewport, modelView);
+
+  struct Vec3f32   v0Proj    = ProjectVec4ToVec3(MatVecMul4x4(M, CREATE_VEC4f32(v0.x, v0.y, v0.z, 1.0f)));
+  struct Vec3f32   v1Proj    = ProjectVec4ToVec3(MatVecMul4x4(M, CREATE_VEC4f32(v1.x, v1.y, v1.z, 1.0f)));
+  struct Vec3f32   v2Proj    = ProjectVec4ToVec3(MatVecMul4x4(M, CREATE_VEC4f32(v2.x, v2.y, v2.z, 1.0f)));
+
+  struct Vec4f32   glVertex0 = MatVecMul4x4(modelView, CREATE_VEC4f32(v0.x, v0.y, v0.z, 1.0f));
+  struct Vec4f32   glVertex1 = MatVecMul4x4(modelView, CREATE_VEC4f32(v1.x, v1.y, v1.z, 1.0f));
+  struct Vec4f32   glVertex2 = MatVecMul4x4(modelView, CREATE_VEC4f32(v2.x, v2.y, v2.z, 1.0f));
+
+  i32              xMin      = ceil(MIN(MIN(v0Proj.x, v1Proj.x), v2Proj.x));
+  i32              yMin      = ceil(MIN(MIN(v0Proj.y, v1Proj.y), v2Proj.y));
+
+  i32              xMax      = floor(MAX(MAX(v0Proj.x, v1Proj.x), v2Proj.x));
+  i32              yMax      = floor(MAX(MAX(v0Proj.y, v1Proj.y), v2Proj.y));
+
+  f32              totalArea = crossProduct2Df32(CREATE_VEC2f32(v1Proj.x, v1Proj.y), CREATE_VEC2f32(v2Proj.x, v2Proj.y), CREATE_VEC2f32(v0Proj.x, v0Proj.y));
+
+  for (i32 x = xMin; x <= xMax; x++)
+  {
+
+    for (i32 y = yMin; y <= yMax; y++)
+    {
+      f32  w0     = crossProduct2Df32(CREATE_VEC2f32(v1Proj.x, v1Proj.y), CREATE_VEC2f32(v2Proj.x, v2Proj.y), CREATE_VEC2f32(x, y));
+      f32  w1     = crossProduct2Df32(CREATE_VEC2f32(v2Proj.x, v2Proj.y), CREATE_VEC2f32(v0Proj.x, v0Proj.y), CREATE_VEC2f32(x, y));
+      f32  w2     = crossProduct2Df32(CREATE_VEC2f32(v0Proj.x, v0Proj.y), CREATE_VEC2f32(v1Proj.x, v1Proj.y), CREATE_VEC2f32(x, y));
+
+      f32  alpha  = w0 / totalArea;
+      f32  beta   = w1 / totalArea;
+      f32  gamma  = w2 / totalArea;
+
+      bool inside = w0 >= 0 && w1 >= 0 && w2 >= 0;
+
+      i32  z      = alpha * v0Proj.z + beta * v1Proj.z + gamma * v2Proj.z;
 
       if (inside && zBuffer[y * shadowBuffer->width + x] < z)
       {
         zBuffer[y * shadowBuffer->width + x] = z;
 
-        struct Matrix3x3 m                   = {
-                              .i = {v0Proj.x, v1Proj.x, v2Proj.x}, //
-                              .j = {v0Proj.y, v1Proj.y, v2Proj.y},
-                              .k = {v0Proj.z, v1Proj.z, v2Proj.z}
-        };
-        struct Vec3f32 p     = MatVecMul3x3(m, CREATE_VEC3f32(alpha, beta, gamma));
-        struct Vec4u8  color = {255 * p.z / DEPTH, 255 * p.z / DEPTH, 255 * p.z / DEPTH, 255};
+        f32 depth                            = glVertex0.z * alpha + glVertex1.z * beta + glVertex2.z * gamma;
+        f32 diff                             = (depth + 1.0f) / 2.0f;
+        diff                                 = diff > 1.0f ? 1.0f : diff;
+        diff                                 = diff < 0.0f ? 0.0f : diff;
+
+        struct Vec4u8 color                  = {255 * diff, 255 * diff, 255 * diff, 255};
+
         setPixel(shadowBuffer, x, y, color);
       }
     }
