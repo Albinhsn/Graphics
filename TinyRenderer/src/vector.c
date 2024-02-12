@@ -384,7 +384,7 @@ void buildViewportMatrix4x4(struct Matrix4x4* m, i32 x, i32 y, i32 w, i32 h, i32
 
   m->m[0][0] = w / 2.0f;
   m->m[1][1] = h / 2.0f;
-  m->m[2][2] = depth / 2.0f;
+  m->m[3][3] = depth / 2.0f;
 }
 void buildIdentityMatrix4x4(struct Matrix4x4* m)
 {

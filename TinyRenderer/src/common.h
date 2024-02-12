@@ -25,8 +25,8 @@ typedef struct Vec3f32;
 
 #define LIGHT_DIR                   ((struct Vec3f32){-0.5f, 2.0f, 4.0f})
 
-#define WIDTH                       800
-#define HEIGHT                      800
+#define WIDTH                       1024
+#define HEIGHT                      1024
 
 #define DEPTH                       500
 

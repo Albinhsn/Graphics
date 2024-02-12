@@ -55,10 +55,9 @@ int main()
   buildIdentityMatrix4x4(&projectionMatrix);
 
   struct Matrix4x4 viewport;
-  buildIdentityMatrix4x4(&viewport);
-  buildViewportMatrix4x4(&viewport, WIDTH / 8, HEIGHT / 8, (WIDTH * 3) / 4, (HEIGHT * 3) / 4, DEPTH);
+  buildViewportMatrix4x4(&viewport, WIDTH / 8, HEIGHT / 8, (WIDTH * 3) / 4, (HEIGHT * 3) / 4, 2.0f);
 
-  i32            totalSims = 100;
+  i32            totalSims = 1000;
 
   struct Vec3f32 up        = UP;
 
@@ -90,6 +89,7 @@ int main()
     }
 
     struct Matrix4x4 modelView          = lookAt(eye, center, up);
+
     struct Vec4f32*  vertices           = obj.vertices;
     struct Vec3f32*  textureCoordinates = obj.textureCoordinates;
     struct Vec3f32*  normals            = obj.normals;
@@ -142,12 +142,10 @@ int main()
   for (i32 i = 0; i < shadowBuffer.width * shadowBuffer.height; i++)
   {
 
-    i32 res               = zTextureBuffer2[i] / totalSims;
-    if(res > 255){
+    i32 res = zTextureBuffer2[i] / totalSims;
+    if (res > 255)
+    {
       printf("%d\n", res);
-    }
-    if(res > 0 && res < 70){
-        res += 25;
     }
     image.data[i * 4 + 0] = res;
     image.data[i * 4 + 1] = res;
