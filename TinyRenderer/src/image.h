@@ -4,7 +4,7 @@
 #include "common.h"
 #include "vector.h"
 struct Image {
-  u32 width;
+  u32 wibdth;
   u32 height;
   u8 *data;
 };
