@@ -4,11 +4,12 @@ import org.lwjgl.BufferUtils;
 
 import java.nio.ByteBuffer;
 
-public class Image
+public class Framebuffer
 {
     private final short width;
     private final short height;
     public ByteBuffer buffer;
+	public float[] zBuffer;
 
     public short getWidth(){
 	return this.width;
@@ -24,14 +25,14 @@ public class Image
 	int idxOffset = (y * this.width + x) * 4;
 	this.buffer.put(idxOffset, color);
     }
-    public Image(short width, short height, ByteBuffer buffer){
+    public Framebuffer(short width, short height, ByteBuffer buffer){
 	final int bpp = 4;
 	this.width = width;
 	this.height = height;
 	this.buffer = buffer;
     }
 
-    public Image(short width, short height){
+    public Framebuffer(short width, short height){
 	final int bpp = 4;
 	this.width = width;
 	this.height = height;

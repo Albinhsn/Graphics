@@ -212,11 +212,11 @@ public class TGAImage
 	return imageBuffer;
     }
 
-    public static Image decodeTGAImageFromFile(String filePath) throws IOException {
+    public static Framebuffer decodeTGAImageFromFile(String filePath) throws IOException {
 	TGAImage tgaImage = new TGAImage(filePath);
 
 	ByteBuffer buffer = tgaImage.parseImage();
 	buffer.flip();
-	return new Image(tgaImage.targaHeader.getWidth(), tgaImage.targaHeader.getHeight(), buffer);
+	return new Framebuffer(tgaImage.targaHeader.getWidth(), tgaImage.targaHeader.getHeight(), buffer);
     }
 }

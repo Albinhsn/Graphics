@@ -3,6 +3,7 @@ Essentially write a software renderer
 
 We call functions via the some class API that sends command to the command processor
 
+
 The command processor then "processes" and executes the command
 The command in question needs to have some state attached to it 
 Which means it can be different commands essentially
@@ -10,7 +11,6 @@ Which means it can be different commands essentially
 Vertex Shader walks through each primitive and does some transformation
 Sends those primitives to the rasterizer who then rasters them and returns a list of points
 To which the fragment shader then takes and calculates each color for by some computation
-
 All additional data is moved via the abstract shader class?
 
 
@@ -25,11 +25,11 @@ All additional data is moved via the abstract shader class?
   - [ ] TGA encoder
 - [x] Implement Bresenham’s line algorithm
 - [x] Implement basic triangle rasterization (painter’s algorithm)
-- [ ] Implement a z-buffer 
+- [x] Command processor
+- [x] Draw lines
 - [ ] Vertex/Fragment shader classes setup
-- [ ] Command processor
+- [ ] Implement a z-buffer 
 - [ ] Texture sampler
-- [ ] Draw lines
 - [ ] Draw splines
 - [ ] Ray tracing/Post processing
 

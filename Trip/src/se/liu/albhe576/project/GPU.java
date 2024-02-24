@@ -1,48 +1,43 @@
 package se.liu.albhe576.project;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class GPU
 {
-    CommandProcessor commandProcessor;
-
-    Rasterizer rasterizer;
-    Image image;
-    private final GraphicsLayer graphicsLayer;
+    private final CommandProcessor commandProcessor;
+    private List<Shader> shaders;
+    private int shaderIndex;
+    public Thread commandProcessorThread;
 
     public GPU(short imageWidth, short imageHeight){
-        this.image = new Image(imageWidth, imageHeight);
-        this.rasterizer = new Rasterizer();
-        this.commandProcessor = new CommandProcessor();
-        this.graphicsLayer = new GraphicsLayer();
+        this.commandProcessor = new CommandProcessor(imageWidth, imageHeight);
+        this.shaders = new ArrayList<Shader>();
+        this.shaderIndex = -1;
+    }
+
+    public void attachShader(int shaderIndex){
+        this.shaderIndex = shaderIndex;
     }
 
     public void draw(){
-	// Send of command to commandProcessor
-	// 	need some sort of boolean back so we can then do the actual send of with the framebuffer and render the screen
+        DrawCommand drawCommand = new DrawCommand();
+        this.commandProcessor.sendCommmand(drawCommand);
     }
-    // list of shader
-    // current shader index
-    List<Shader> shaders;
-    int currentShaderIndex;
 
-    // list of buffers
-    // current buffer index
-
-    // list of textures
-    // current texture index
-
-    // lookAt
-    public static void main(String[] args) throws IOException {
-        GPU gpu = new GPU((short)1024, (short)768);
-        Thread graphicsLayerThread = new Thread(gpu.graphicsLayer);
-        graphicsLayerThread.start();
-        Wavefront wavefront = Wavefront.parseWavefrontFromFile("./african_head.obj");
-        gpu.rasterizer.rasterWavefront(gpu.image, wavefront);
-
-        while(graphicsLayerThread.isAlive()){
-            gpu.graphicsLayer.sendDrawCall(gpu.image);
-        }
+    public int addShader(Shader shader){
+        int out = shaders.size();
+        shaders.add(shader);
+        return out;
+    }
+    public void runShader(){
+        Shader shader = this.shaders.get(this.shaderIndex);
+        RunShaderCommand runShaderCommand = new RunShaderCommand(shader);
+        this.commandProcessor.sendCommmand(runShaderCommand);
+    }
+    public void startGPU(){
+        this.commandProcessorThread = new Thread(this.commandProcessor);
+        this.commandProcessorThread.start();
     }
 }

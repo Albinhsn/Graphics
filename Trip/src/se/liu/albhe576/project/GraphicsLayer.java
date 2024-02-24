@@ -7,12 +7,11 @@ import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
 
-import java.awt.image.Raster;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL30.*;
@@ -21,14 +20,14 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 public class GraphicsLayer implements Runnable
 {
     private long window;
-    private Image image;
+    private Framebuffer framebuffer;
 
     private boolean drawCallMade;
 
-    private void draw(Image image){
+    private void draw(Framebuffer framebuffer){
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
         glBindTexture(GL_TEXTURE_2D, 0);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.getWidth(), image.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image.getBuffer());
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, framebuffer.getWidth(), framebuffer.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, framebuffer.getBuffer());
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -114,8 +113,8 @@ public class GraphicsLayer implements Runnable
     }
 
     // ToDo make this a ringbuffer of calls instead
-    public void sendDrawCall(Image image){
-        this.image = image;
+    public void sendDrawCall(Framebuffer framebuffer){
+        this.framebuffer = framebuffer;
         this.drawCallMade = true;
     }
 
@@ -126,10 +125,13 @@ public class GraphicsLayer implements Runnable
         while(!glfwWindowShouldClose(window)){
             if(this.drawCallMade){
                 this.drawCallMade = false;
-                this.draw(this.image);
+                this.draw(this.framebuffer);
             }
             glfwPollEvents();
         }
+
+        glfwTerminate();
+        Objects.requireNonNull(glfwSetErrorCallback(null)).free();
     }
 
 
@@ -152,6 +154,7 @@ public class GraphicsLayer implements Runnable
 
         glfwSetKeyCallback(this.window, (window, key, scancode, action, mods) -> {
             if(key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE){
+                System.out.println("Closing window!");
                 glfwSetWindowShouldClose(window, true);
             }
 
@@ -179,7 +182,7 @@ public class GraphicsLayer implements Runnable
     }
 
     public GraphicsLayer(){
-        this.image = null;
+        this.framebuffer = null;
         this.drawCallMade = false;
     }
 
