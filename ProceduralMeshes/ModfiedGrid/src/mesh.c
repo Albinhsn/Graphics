@@ -49,6 +49,7 @@ void CreateQuadMesh(struct Mesh *mesh, int meshSize) {
     mesh->bufferData[bufferOffset + 1].tangents =
         (struct Vec3){1.0f, 0.0f, 0.0f};
     mesh->bufferData[bufferOffset + 1].time = 0.0f;
+    mesh->bufferData[bufferOffset + 1].binormal = 0.0f;
 
     mesh->bufferData[bufferOffset + 2].vertices =
         (struct Vec3){x, y + offsetY, 0.0f};
@@ -59,6 +60,7 @@ void CreateQuadMesh(struct Mesh *mesh, int meshSize) {
     mesh->bufferData[bufferOffset + 2].tangents =
         (struct Vec3){1.0f, 0.0f, 0.0f};
     mesh->bufferData[bufferOffset + 2].time = 0.0f;
+    mesh->bufferData[bufferOffset + 2].binormal = 0.0f;
 
     mesh->bufferData[bufferOffset + 3].vertices =
         (struct Vec3){x + offsetX, y + offsetY, 0.0f};
@@ -69,6 +71,7 @@ void CreateQuadMesh(struct Mesh *mesh, int meshSize) {
     mesh->bufferData[bufferOffset + 3].tangents =
         (struct Vec3){1.0f, 0.0f, 0.0f};
     mesh->bufferData[bufferOffset + 3].time = 0.0f;
+    mesh->bufferData[bufferOffset + 3].binormal = 0.0f;
 
     indexIdx = (bufferOffset * 6) / 4;
 

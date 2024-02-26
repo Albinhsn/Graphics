@@ -5,6 +5,7 @@
 #include "string.h"
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_video.h>
 #include <stdbool.h>
 #include <sys/time.h>
 
@@ -38,7 +39,7 @@ int main() {
       indexBufferId;
 
   struct Mesh mesh;
-  int gridSize = 10;
+  int gridSize = 15;
   CreateQuadMesh(&mesh, gridSize);
 
   window = SDL_CreateWindow("client", 0, 0, screenWidth, screenHeight,
@@ -46,6 +47,7 @@ int main() {
   context = SDL_GL_CreateContext(window);
 
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+  SDL_GL_SetSwapInterval(0);
 
   vShader = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vShader, 1, &constVertexSource, NULL);
@@ -112,8 +114,16 @@ int main() {
   bool running = true;
   SDL_Event event;
 
+  glActiveTexture(0);
   GLuint textureId;
   initializeTexture(&textureId);
+
+  glActiveTexture(1);
+  GLuint normalId;
+  initializeTexture(&normalId);
+
+  struct Image normalImage;
+  parsePNG(&normalImage, "./data/normal-map.png");
 
   struct timeval current_time;
   gettimeofday(&current_time, NULL);
@@ -139,9 +149,26 @@ int main() {
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
+    glActiveTexture(0);
     glBindTexture(GL_TEXTURE_2D, textureId);
+
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0,
                  GL_RGBA, GL_UNSIGNED_BYTE, image.data);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                    GL_NEAREST_MIPMAP_NEAREST);
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glActiveTexture(1);
+    glBindTexture(GL_TEXTURE_2D, normalId);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, normalImage.width,
+                 normalImage.height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 normalImage.data);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);

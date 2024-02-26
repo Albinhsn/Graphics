@@ -22,7 +22,7 @@
 
 #define MIN_COLLISION_AMOUNT              5.0f
 
-#define VSYNC                             false
+#define VSYNC                             true 
 
 #define ONE_DIVIDED_BY_SCREENWIDTH        1.0f / (float)SCREENWIDTH
 #define ONE_DIVIDED_BY_SCREENHEIGHT       1.0f / (float)SCREENHEIGHT

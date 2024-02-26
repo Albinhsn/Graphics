@@ -23,4 +23,5 @@ void main(void)
   gl_Position = vec4(newPosition, 1.0f);
 
   texCoord = inputTexCoord;
+
 }

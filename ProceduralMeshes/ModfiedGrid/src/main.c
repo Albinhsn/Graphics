@@ -8,14 +8,6 @@
 #include <stdbool.h>
 #include <sys/time.h>
 
-void initializeTexture(GLuint *textureId) {
-  glActiveTexture(GL_TEXTURE + 0);
-  glGenTextures(1, textureId);
-
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, *textureId);
-}
-
 int main() {
   int screenWidth = 620;
   int screenHeight = 480;
@@ -124,8 +116,35 @@ int main() {
   bool running = true;
   SDL_Event event;
 
+  glActiveTexture(1);
   GLuint textureId;
-  initializeTexture(&textureId);
+  glGenTextures(1, &textureId);
+
+  glBindTexture(GL_TEXTURE_2D, textureId);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA,
+               GL_UNSIGNED_BYTE, image.data);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                  GL_NEAREST_MIPMAP_NEAREST);
+  glGenerateMipmap(GL_TEXTURE_2D);
+
+  glActiveTexture(0);
+  GLuint normalId;
+  glGenTextures(1, &normalId);
+  struct Image normalImage;
+  parsePNG(&normalImage, "./data/normal-map.png");
+
+  glBindTexture(GL_TEXTURE_2D, normalId);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, normalImage.width, normalImage.height,
+               0, GL_RGBA, GL_UNSIGNED_BYTE, normalImage.data);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                  GL_NEAREST_MIPMAP_NEAREST);
+  glGenerateMipmap(GL_TEXTURE_2D);
 
   struct timeval current_time;
   gettimeofday(&current_time, NULL);
@@ -148,21 +167,26 @@ int main() {
                  mesh.bufferDatalength * sizeof(struct BufferData2),
                  mesh.bufferData, GL_STATIC_DRAW);
 
+    glActiveTexture(0);
+    glBindTexture(GL_TEXTURE_2D, textureId);
+    int location = glGetUniformLocation(program, "shaderTexture");
+    if (location == -1) {
+      printf("uh oh\n");
+      exit(1);
+    }
+    glUniform1i(location, 0);
+
+    glActiveTexture(1);
+    glBindTexture(GL_TEXTURE_2D, normalId);
+    location = glGetUniformLocation(program, "normalTexture");
+    if (location == -1) {
+      printf("uh oh\n");
+      exit(1);
+    }
+    glUniform1i(location, 0);
+
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
-    glBindTexture(GL_TEXTURE_2D, textureId);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0,
-                 GL_RGBA, GL_UNSIGNED_BYTE, image.data);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                    GL_NEAREST_MIPMAP_NEAREST);
-
-    glGenerateMipmap(GL_TEXTURE_2D);
 
     glDrawElements(GL_TRIANGLES, mesh.indicesLength, GL_UNSIGNED_INT, 0);
 
