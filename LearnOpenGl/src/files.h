@@ -1,69 +1,18 @@
-#ifndef IMAGE_H
-#define IMAGE_H
+#ifndef STA_FILES_H
+#define STA_FILES_H
+#include "common.h"
+#include "string.h"
 #include "vector.h"
-#include <GL/gl.h>
 #include <stdbool.h>
+#include <stdio.h>
 
-#define IDLE_STATE     0
-#define RUNNING_STATE  1
-#define ATTACK_1_STATE 2
-#define ATTACK_2_STATE 3
-#define ATTACK_3_STATE 4
-
-struct PNG
+struct TargaImage
 {
-  unsigned int   width;
-  unsigned int   height;
-  unsigned char* data;
-  unsigned int   bpp;
-};
-
-struct Image
-{
-  unsigned int   width, height;
-  unsigned int   bpp;
+  u64            width, height;
+  i32            bpp;
   unsigned char* data;
 };
-typedef struct Image Image;
-
-struct BufferData
-{
-  struct Vec3f32 vertices;
-  struct Vec3f32 indices;
-};
-
-struct Mesh
-{
-  int                bufferDatalength;
-  struct BufferData* bufferData;
-};
-
-struct Texture
-{
-  GLuint textureUnit;
-  GLuint textureId;
-};
-typedef struct Texture Texture;
-
-struct FontType
-{
-  float left, right;
-  int   size;
-};
-typedef struct FontType FontType;
-
-struct Font
-{
-  struct FontType* type;
-  struct Image     image;
-  GLuint            program;
-  GLuint            texture;
-  GLuint            vertexArrayId;
-  GLuint            vertexBufferId;
-  float            height;
-  int              spaceSize;
-};
-typedef struct Font Font;
+typedef struct TargaImage TargaImage;
 
 struct TargaHeader
 {
@@ -85,31 +34,99 @@ struct TargaHeader
     };
   };
 };
+typedef struct TargaHeader TargaHeader;
 
-// struct TargaHeader
-// {
-//   unsigned char  data1[12];
-//   unsigned short width;
-//   unsigned short height;
-//   unsigned char  bpp;
-//   unsigned char  data2;
-// };
-
-struct MapFile
+struct CSVRecord
 {
-  u8  mapWidth;
-  u8  mapHeight;
-  u8* tileIds;
+  Buffer* data;
+  u64     dataCount;
+  u64     dataCap;
 };
+typedef struct CSVRecord CSVRecord;
 
-void parseMapFile(struct MapFile* mapFile, char* filename);
-void parseFontTypes(struct Font* font, const char* fileLocation);
-void initSingleColorImage(struct Image* image, struct Vec3i32 color);
-void parseFont(struct Font* font);
-bool readTargaImage(struct Image* image, const char* filename);
-bool read_file(char** buffer, int* len, const char* fileName);
-void initUnfilledQuadImage(struct Image* image, struct Vec3i32 color, int lineThickness, u8 width, u8 height);
-bool parsePNG(struct Image* png, const char* filename);
-void loadTileImages(struct Image* tileImages, const char* filename);
+struct CSV
+{
+  CSVRecord* records;
+  u64        recordCount;
+  u64        recordCap;
+};
+typedef struct CSV CSV;
+
+enum JsonType
+{
+  JSON_VALUE,
+  JSON_OBJECT,
+  JSON_ARRAY,
+  JSON_STRING,
+  JSON_NUMBER,
+  JSON_BOOL,
+  JSON_NULL
+};
+typedef enum JsonType JsonType;
+
+struct JsonValue;
+struct JsonObject;
+struct JsonArray;
+
+struct JsonValue
+{
+  JsonType type;
+  union
+  {
+    struct JsonObject* obj;
+    struct JsonArray*  arr;
+    bool               b;
+    char*              string;
+    float              number;
+  };
+};
+typedef struct JsonValue JsonValue;
+
+struct JsonObject
+{
+  char**     keys;
+  JsonValue* values;
+  u64        size;
+  u64        cap;
+};
+typedef struct JsonObject JsonObject;
+
+struct JsonArray
+{
+  uint32_t   arraySize;
+  uint32_t   arrayCap;
+  JsonValue* values;
+};
+typedef struct JsonArray JsonArray;
+
+struct Json
+{
+  JsonType headType;
+  union
+  {
+    JsonValue  value;
+    JsonObject obj;
+    JsonArray  array;
+  };
+};
+typedef struct Json Json;
+
+bool                sta_deserialize_json_from_file(Arena* arena, Json* json, const char* filename);
+bool                sta_serialize_json_to_file(Json* json, const char* filename);
+void                sta_debug_json(Json* json);
+
+bool                sta_read_csv_from_file(Arena* arena, CSV* csv, const char* filelocation);
+bool                sta_write_csv_to_file(CSV* csv, const char* filelocation);
+void                sta_debug_csv(CSV* csv);
+bool                sta_read_csv_from_string(CSV* csv, const char* csv_data);
+void                sta_targa_write(TargaImage* image, const char* filename);
+
+bool                sta_write_ppm(const char* filename, u8* data, u64 width, u64 height);
+void                sta_draw_rect_to_image(u8* data, u64 image_width, u64 x, u64 y, u64 width, u64 height, u8 r, u8 g, u8 b, u8 a);
+bool                sta_targa_read_from_file(TargaImage* image, const char* filename);
+bool                sta_targa_read_from_file(Arena* arena, TargaImage* image, const char* filename);
+bool                sta_read_file(Arena* arena, Buffer* string, const char* fileName);
+bool                sta_read_file(Buffer* buffer, const char* fileName);
+bool                sta_append_to_file(const char* filename, const char* message);
 
 #endif

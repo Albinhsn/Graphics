@@ -1,91 +1,168 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <stdbool.h>
 #include <stdint.h>
-#include <sys/time.h>
+#include <stdio.h>
+#define ArrayCount(Array)     (sizeof(Array) / sizeof((Array)[0]))
 
-#define DEBUG_INPUT                       false
-#define DEBUG_PLAYER                      false
-#define DEBUG_SDL                         false
-#define DEBUG_BOUNDS                      true
+#define MAX(a, b)             ((a) < (b) ? (b) : (a))
+#define MIN(a, b)             ((a) > (b) ? (b) : (a))
+#define ABS(x)                ((x) < 0 ? -(x) : x)
 
-#define MAPFILE_LOCATION                  "./data/maps/dungeon_map01.txt"
-#define TILEIMAGE_LOCATION                "./data/tiles/tile_data03.txt"
+#define ANSI_COLOR_RED        "\x1b[31m"
+#define ANSI_COLOR_GREEN      "\x1b[32m"
+#define ANSI_COLOR_YELLOW     "\x1b[33m"
+#define ANSI_COLOR_BLUE       "\x1b[34m"
+#define ANSI_COLOR_MAGENTA    "\x1b[35m"
+#define ANSI_COLOR_CYAN       "\x1b[36m"
+#define ANSI_COLOR_RESET      "\x1b[0m"
 
-#define SCREENWIDTH                       1080
-#define SCREENHEIGHT                      720
-
-#define PLAYER_BOUND_WIDTH                SCREENWIDTH * 0.04f
-#define PLAYER_BOUND_HEIGHT               SCREENHEIGHT * 0.12f
-#define PLAYER_BOUND_OFFSET_X             0.0f
-#define PLAYER_BOUND_OFFSET_Y             SCREENHEIGHT * -0.08f
-
-#define MIN_COLLISION_AMOUNT              5.0f
-
-#define VSYNC                             true 
-
-#define ONE_DIVIDED_BY_SCREENWIDTH        1.0f / (float)SCREENWIDTH
-#define ONE_DIVIDED_BY_SCREENHEIGHT       1.0f / (float)SCREENHEIGHT
-
-#define INBOUNDS(fst, snd)                (MAX(MIN(fst, snd), -snd))
-
-#define MIN(fst, snd)                     (fst < snd ? fst : snd)
-#define MAX(fst, snd)                     (fst > snd ? fst : snd)
-
-#define WORLDSPACEX_TO_VIEWSPACE(x)       (((float)(x) * ONE_DIVIDED_BY_SCREENWIDTH))
-#define WORLDSPACEY_TO_VIEWSPACE(y)       (((float)(y) * ONE_DIVIDED_BY_SCREENHEIGHT))
-
-#define VIEWSPACEY_TO_WORLDSPACE(y)       ((y) * SCREENHEIGHT)
-#define VIEWSPACEX_TO_WORLDSPACE(x)       ((x) * SCREENWIDTH)
-
-#define MOUSEX_TO_WORLDSPACE(x)           ((float)(2.0f * x - SCREENWIDTH))
-#define MOUSEY_TO_WORLDSPACE(x)           ((-(float)(2.0f * x - SCREENHEIGHT)))
-
-#define VIEWSPACE_WIDTH_TO_WORLDSPACE(x)  ((struct Vec2f32){-SCREENWIDTH * x, SCREENWIDTH * x})
-#define VIEWSPACE_HEIGHT_TO_WORLDSPACE(y) ((struct Vec2f32){-SCREENHEIGHT * y, SCREENHEIGHT * y})
-
-#define ANIMATION_UPDATE_TIMER            100
-
-#define BACKGROUND_FILE_LOCATION          "./Assets/Backgrounds/tile_0009.png"
-#define FONT_IMAGE_LOCATION               "./Assets/Fonts/font01.png"
-#define FONT_DATA_LOCATION                "./Assets/Fonts/font01.txt"
-
-#define ABS_F(x)                          ((x < 0.0f ? -(x) : (x)))
-
-#define ASCII_ESCAPE                      27
-#define ASCII_RETURN                      13
-#define ASCII_SPACE                       32
-#define ASCII_BACKSPACE                   8
-
-#define BACKGROUND_PROGRAM_VALUE          9
-
-#define TEXT_PROGRAM_VALUE                3
-#define TEXT_TEXTURE_VALUE                1
-
-#define MOVEMENT_UPDATE_TIMER             16
-
-typedef struct Vec4f32;
-
-#define RED    ((struct Vec4f32){1.0f, 0.0f, 0.0f, 1.0f})
-#define YELLOW ((struct Vec4f32){1.0f, 1.0f, 0.0f, 1.0f})
-#define GREEN  ((struct Vec4f32){0.0f, 1.0f, 0.0f, 1.0f})
-#define CYAN   ((struct Vec4f32){0.0f, 1.0f, 1.0f, 1.0f})
-#define PURPLE ((struct Vec4f32){1.0f, 0.0f, 1.0f, 1.0f})
-#define BLUE   ((struct Vec4f32){1.0f, 0.0f, 0.0f, 1.0f})
+#define DEGREES_TO_RADIANS(x) (x * PI / 180.0f)
+#define CLAMP(a, min, max)    MAX(MIN(max, a), min)
 
 typedef uint8_t  u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
+typedef uint64_t u64;
+
+typedef int8_t   i8;
+typedef int16_t  i16;
+typedef int32_t  i32;
+typedef int64_t  i64;
 
 typedef float    f32;
 typedef double   f64;
 
-typedef int8_t   i8;
-typedef int16_t  i16;
-typedef int      i32;
-typedef int64_t  i64;
+#define PI 3.14159265358979
 
-u32             timeInMilliseconds(void);
-void             getInfoStrings(char* msString, char* fpsString, u32* lastTick, u32* previousTick);
+typedef struct PoolFreeNode PoolFreeNode;
+struct PoolFreeNode
+{
+  PoolFreeNode* next;
+};
+
+struct PoolAllocator
+{
+  u64           memory;
+  u64           chunk_size;
+  u64           size;
+  PoolFreeNode* head;
+};
+typedef struct PoolAllocator PoolAllocator;
+
+void                         sta_pool_init(PoolAllocator* pool, void* buffer, u64 chunk_size, u64 count);
+void*                        sta_pool_alloc(PoolAllocator* pool);
+void                         sta_pool_free(PoolAllocator* pool, u64 ptr);
+void                         sta_pool_free_all(PoolAllocator* pool);
+
+struct Arena
+{
+  u64 memory;
+  u64 ptr;
+  u64 maxSize;
+};
+typedef struct Arena Arena;
+u64                  sta_arena_push(Arena* arena, u64 size, u64 alignment);
+void                 sta_arena_pop(Arena* arena, u64 size);
+#define DEFAULT_ALIGNMENT                        2 * sizeof(void*)
+
+#define sta_arena_push_array(arena, type, count) (type*)sta_arena_push((arena), sizeof(type) * (count), DEFAULT_ALIGNMENT)
+#define sta_arena_push_struct(arena, type)       sta_arena_push_array((arena), type, 1)
+
+#define RESIZE_ARRAY(array, type, count, cap)                                                                                                                                                          \
+  if (count >= cap)                                                                                                                                                                                    \
+  {                                                                                                                                                                                                    \
+    u64 prev_cap = cap;                                                                                                                                                                                \
+    cap *= 2;                                                                                                                                                                                          \
+    type* arr = (type*)allocate(sizeof(type) * cap);                                                                                                                                               \
+    memcpy(arr, array, sizeof(type) * prev_cap);                                                                                                                                                       \
+    deallocate(array, sizeof(type) * prev_cap);                                                                                                                                                    \
+    array = arr;                                                                                                                                                                                       \
+  }
+
+struct Buffer
+{
+  u64   len;
+  u64   index;
+  char* buffer;
+};
+
+struct Profiler
+{
+  u64 StartTSC;
+  u64 EndTSC;
+};
+typedef struct Profiler Profiler;
+
+extern Profiler         profiler;
+u64                     ReadCPUTimer(void);
+u64                     EstimateCPUTimerFreq(void);
+
+void                    initProfiler();
+void                    displayProfilingResult();
+
+#define PROFILER 1
+#if PROFILER
+
+struct ProfileAnchor
+{
+  u64         elapsedExclusive;
+  u64         elapsedInclusive;
+  u64         hitCount;
+  u64         processedByteCount;
+  char const* label;
+};
+typedef struct ProfileAnchor ProfileAnchor;
+
+extern ProfileAnchor         globalProfileAnchors[4096];
+extern u32                   globalProfilerParentIndex;
+
+struct ProfileBlock
+{
+  char const* label;
+  u64         oldElapsedInclusive;
+  u64         startTime;
+  u32         parentIndex;
+  u32         index;
+};
+typedef struct ProfileBlock ProfileBlock;
+void                        initProfileBlock(ProfileBlock* block, char const* label_, u32 index_, u64 byteCount);
+void                        exitProfileBlock(ProfileBlock* block);
+
+#define NameConcat2(A, B) A##B
+#define NameConcat(A, B)  NameConcat2(A, B)
+#define TimeBandwidth(Name, ByteCount)                                                                                                                                                                 \
+  ProfileBlock Name;                                                                                                                                                                                   \
+  initProfileBlock(&Name, "Name", __COUNTER__ + 1, ByteCount);
+#define ExitBlock(Name)              exitProfileBlock(&Name)
+#define TimeBlock(Name)              TimeBandwidth(Name, 0)
+#define ProfilerEndOfCompilationUnit static_assert(__COUNTER__ < ArrayCount(GlobalProfilerAnchors), "Number of profile points exceeds size of profiler::Anchors array")
+#define TimeFunction                 TimeBlock(__func__)
+
+#else
+
+#define TimeBlock(blockName)
+#define TimeFunction
+#endif
+
+struct Logger
+{
+  FILE* filePtr;
+};
+typedef struct Logger Logger;
+
+enum LoggingLevel
+{
+  LOGGING_LEVEL_INFO,
+  LOGGING_LEVEL_WARNING,
+  LOGGING_LEVEL_ERROR,
+};
+typedef enum LoggingLevel LoggingLevel;
+
+void                      sta_log(Logger* logger, LoggingLevel level, const char * msg);
+
+bool                      sta_initLogger(Logger* logger, const char * filename);
+bool                      sta_destroyLogger(Logger* logger);
 
 #endif

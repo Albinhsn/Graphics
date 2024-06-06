@@ -1,24 +1,24 @@
-CC := gcc
-CFLAGS := -g -lm -lSDL2 -lGL -pg -ggdb -O0 -std=c11 -Wall -Wno-missing-braces 
+CC := g++
+CFLAGS := -g -lm -lSDL2 -lGL -O2 -std=c++11 -Wall -Werror
 TARGET := main 
 
-SRCS = $(wildcard src/*.c)
-OBJS = $(patsubst src/%.c,obj/%.o,$(SRCS))
+SRCS = $(wildcard src/*.cpp)
+OBJS = $(patsubst src/%.cpp,obj/%.o,$(SRCS))
 
 all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC)  -o $@ $^ $(CFLAGS) 
 
-obj/%.o: src/%.c
+obj/%.o: src/%.cpp
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-obj/%.o: src/%.c
+obj/%.o: src/%.cpp
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 len:
-	find . -name '*.c' | xargs wc -l
+	find . -name '*.cpp' | xargs wc -l
 
 clean:
 	rm -rf obj/ $(TARGET)

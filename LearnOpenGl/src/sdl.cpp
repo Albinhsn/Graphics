@@ -1,6 +1,9 @@
 #include "sdl.h"
 #include "common.h"
-#include "vector.h"
+#include <GL/gl.h>
+#include <GL/glext.h>
+#include <SDL2/SDL_render.h>
+#include <SDL2/SDL_surface.h>
 
 PFNGLCREATESHADERPROC             glCreateShader             = NULL;
 PFNGLCOMPILESHADERPROC            glCompileShader            = NULL;
@@ -19,6 +22,7 @@ PFNGLUSEPROGRAMPROC               glUseProgram               = NULL;
 PFNGLATTACHSHADERPROC             glAttachShader             = NULL;
 PFNGLGETUNIFORMLOCATIONPROC       glGetUniformLocation       = NULL;
 PFNGLUNIFORMMATRIX4FVPROC         glUniformMatrix4fv         = NULL;
+PFNGLUNIFORMMATRIX3FVPROC         glUniformMatrix3fv         = NULL;
 PFNGLGENVERTEXARRAYSPROC          glGenVertexArrays          = NULL;
 PFNGLGENBUFFERSPROC               glGenBuffers               = NULL;
 PFNGLBINDBUFFERPROC               glBindBuffer               = NULL;
@@ -45,7 +49,7 @@ PFNGLGENRENDERBUFFERSPROC         glGenRenderbuffers         = NULL;
 PFNGLBINDRENDERBUFFERPROC         glBindRenderbuffer         = NULL;
 PFNGLRENDERBUFFERSTORAGEPROC      glRenderbufferStorage      = NULL;
 PFNGLFRAMEBUFFERRENDERBUFFERPROC  glFramebufferRenderbuffer  = NULL;
-PFNGLDRAWBUFFERSARBPROC           glDrawBuffers              = NULL;
+PFNGLDRAWBUFFERSPROC              glDrawBuffers              = NULL;
 PFNGLDELETERENDERBUFFERSPROC      glDeleteRenderbuffers      = NULL;
 PFNGLBLENDFUNCSEPARATEPROC        glBlendFuncSeparate        = NULL;
 PFNGLBINDVERTEXARRAYPROC          glBindVertexArray          = NULL;
@@ -70,6 +74,7 @@ void                              loadExtensions()
   glAttachShader             = (PFNGLATTACHSHADERPROC)SDL_GL_GetProcAddress("glAttachShader");
   glGetUniformLocation       = (PFNGLGETUNIFORMLOCATIONPROC)SDL_GL_GetProcAddress("glGetUniformLocation");
   glUniformMatrix4fv         = (PFNGLUNIFORMMATRIX4FVPROC)SDL_GL_GetProcAddress("glUniformMatrix4fv");
+  glUniformMatrix3fv         = (PFNGLUNIFORMMATRIX3FVPROC)SDL_GL_GetProcAddress("glUniformMatrix3fv");
   glGenVertexArrays          = (PFNGLGENVERTEXARRAYSPROC)SDL_GL_GetProcAddress("glGenVertexArrays");
   glBindVertexArray          = (PFNGLBINDVERTEXARRAYPROC)SDL_GL_GetProcAddress("glBindVertexArray");
   glGenBuffers               = (PFNGLGENBUFFERSPROC)SDL_GL_GetProcAddress("glGenBuffers");
@@ -97,7 +102,7 @@ void                              loadExtensions()
   glBindRenderbuffer         = (PFNGLBINDRENDERBUFFERPROC)SDL_GL_GetProcAddress("glBindRenderbuffer");
   glRenderbufferStorage      = (PFNGLRENDERBUFFERSTORAGEPROC)SDL_GL_GetProcAddress("glRenderbufferStorage");
   glFramebufferRenderbuffer  = (PFNGLFRAMEBUFFERRENDERBUFFERPROC)SDL_GL_GetProcAddress("glFramebufferRenderbuffer");
-  glDrawBuffers              = (PFNGLDRAWBUFFERSARBPROC)SDL_GL_GetProcAddress("glDrawBuffers");
+  glDrawBuffers              = (PFNGLDRAWBUFFERSPROC)SDL_GL_GetProcAddress("glDrawBuffers");
   glDeleteRenderbuffers      = (PFNGLDELETERENDERBUFFERSPROC)SDL_GL_GetProcAddress("glDeleteRenderbuffers");
   glBlendFuncSeparate        = (PFNGLBLENDFUNCSEPARATEPROC)SDL_GL_GetProcAddress("glBlendFuncSeparate");
 }
@@ -162,6 +167,11 @@ void sta_glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, 
 {
   glUniformMatrix4fv(location, count, transpose, value);
 }
+
+void sta_glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat* value)
+{
+  glUniformMatrix3fv(location, count, transpose, value);
+}
 void sta_glGenVertexArrays(GLsizei n, GLuint* arrays)
 {
   glGenVertexArrays(n, arrays);
@@ -222,6 +232,21 @@ void sta_glUniform4fv(GLint location, GLsizei count, const GLfloat* value)
 {
   glUniform4fv(location, count, value);
 }
+
+void sta_glGenTextures(GLsizei n, GLuint* textures)
+{
+  glGenTextures(n, textures);
+}
+
+void sta_glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* pixels)
+{
+  glTexImage2D(target, level, internalFormat, width, height, border, format, type, pixels);
+}
+void sta_glBindTexture(GLenum target, GLuint texture)
+{
+  glBindTexture(target, texture);
+}
+
 void* sta_glMapBuffer(GLenum target, GLenum access)
 {
   return glMapBuffer(target, access);
@@ -274,7 +299,7 @@ void sta_glBlendFuncSeparate(GLenum sfactorRGB, GLenum dfactorRGB, GLenum sfacto
 {
   glBlendFuncSeparate(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
 }
-void sta_glShaderSource(GLuint shader, GLsizei count, const GLchar* const* string, const GLint* length)
+void sta_glShaderSource(GLuint shader, GLsizei count, const char* const* string, const GLint* length)
 {
   glShaderSource(shader, count, string, length);
 }
@@ -287,414 +312,46 @@ void sta_glDrawBuffers(GLint n, const GLenum* bufs)
   glDrawBuffers(n, bufs);
 }
 
-static inline void setTexture(GLuint textureId)
+void sta_init_sdl_window(u8** buffer, SDL_Window** window, u64 screenWidth, u64 screenHeight)
 {
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, textureId);
+  SDL_Init(SDL_INIT_VIDEO);
+  *window              = SDL_CreateWindow("Window", 0, 0, screenWidth, screenHeight, 0);
+
+  SDL_Surface* surface = SDL_GetWindowSurface(*window);
+  *buffer              = (u8*)surface->pixels;
 }
 
-static inline void setTextShaderParams(GLuint program, struct Vec4f32* color)
+void sta_gl_render(SDL_Window* window)
 {
-  glUseProgram(program);
-  int location = glGetUniformLocation(program, "shaderTexture");
-  if (location == -1)
-  {
-    printf("Failed to finder shaderTexture when rendering text\n");
-    exit(1);
-  }
-  glUniform1i(location, 0);
-
-  // Set the font pixel color in the pixel shader.
-  location = glGetUniformLocation(program, "pixelColor");
-  if (location == -1)
-  {
-    printf("Failed to finder pixelColor when rendering text\n");
-    exit(1);
-  }
-  f32 colorf32[4] = {color->pos[0], color->pos[1], color->pos[2], color->pos[3]};
-  glUniform4fv(location, 1, &colorf32[0]);
+  SDL_GL_SwapWindow(window);
 }
 
-static void buildUpdatedTextVertexArray(struct Font* font, GLfloat* vertices, const char* text, f32 x, f32 y, f32 fontSize)
+void sta_gl_draw_lines(GLuint vertex_array, u32 vertex_count, u32 width, Color color)
 {
-  GLfloat drawX, drawY;
-  drawX          = WORLDSPACEX_TO_VIEWSPACE(x);
-  drawY          = WORLDSPACEY_TO_VIEWSPACE(y + fontSize / 4.0f);
-
-  i32 numLetters = (i32)strlen(text);
-  f32 height     = WORLDSPACEY_TO_VIEWSPACE(fontSize);
-  f32 totalSize  = 0;
-
-  for (i32 i = 0; i < numLetters; i++)
-  {
-    i32 letter = ((i32)text[i]) - 32;
-    totalSize += WORLDSPACEX_TO_VIEWSPACE(font->type[letter].size);
-  }
-
-  drawX -= totalSize / 2.0f;
-
-  for (int letterIdx = 0, vertexIdx = 0; letterIdx < numLetters; letterIdx++)
-  {
-    int letter = ((int)text[letterIdx]) - 32;
-
-    // If the letter is a space then just move over three pixels.
-    if (letter == 0)
-    {
-      drawX = drawX + WORLDSPACEX_TO_VIEWSPACE(font->spaceSize);
-    }
-    else
-    {
-      f32 size = WORLDSPACEX_TO_VIEWSPACE(font->type[letter].size);
-      // First triangle in quad.
-      vertices[vertexIdx++] = drawX; // Top left.
-      vertices[vertexIdx++] = drawY;
-      vertices[vertexIdx++] = 0.0f;
-      vertices[vertexIdx++] = font->type[letter].left;
-      vertices[vertexIdx++] = 0.0f;
-
-      vertices[vertexIdx++] = drawX + size; // Bot right.
-      vertices[vertexIdx++] = drawY - height;
-      vertices[vertexIdx++] = 0.0f;
-      vertices[vertexIdx++] = font->type[letter].right;
-      vertices[vertexIdx++] = 1.0f;
-
-      vertices[vertexIdx++] = drawX; // Bot Left.
-      vertices[vertexIdx++] = drawY - height;
-      vertices[vertexIdx++] = 0.0f;
-      vertices[vertexIdx++] = font->type[letter].left;
-      vertices[vertexIdx++] = 1.0f;
-
-      vertices[vertexIdx++] = drawX + size; // Top right.
-      vertices[vertexIdx++] = drawY;
-      vertices[vertexIdx++] = 0.0f;
-      vertices[vertexIdx++] = font->type[letter].right;
-      vertices[vertexIdx++] = 0.0f;
-
-      drawX += size + 0.002f;
-    }
-  }
-}
-static void updateText(struct Font* font, const char* text, f32 x, f32 y, GLuint vertexBufferId, GLuint vertexArrayId, f32 size)
-{
-  int     vertexCount = TEXT_MAX_LENGTH * 4 * 5;
-  GLfloat vertices[vertexCount];
-  for (int i = 0; i < vertexCount; i++)
-  {
-    vertices[i] = 0;
-  }
-
-  glBindVertexArray(vertexArrayId);
-  buildUpdatedTextVertexArray(font, vertices, text, x, y, size);
-
-  glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * vertexCount, vertices, GL_STATIC_DRAW);
-
-  glBindVertexArray(0);
+  sta_glBindVertexArray(vertex_array);
+  glLineWidth(width);
+  glDrawArrays(GL_LINES, 0, vertex_count);
 }
 
-void renderText(struct Font* font, const char* text, f32 x, f32 y, GLuint vertexArrayId, GLuint vertexBufferId, struct Vec4f32* color, f32 size)
+void sta_init_sdl_gl(SDL_Window** window, SDL_GLContext* context, int screenWidth, int screenHeight)
 {
-
-  updateText(font, text, x, y, vertexBufferId, vertexArrayId, size);
-
-  glBindVertexArray(vertexArrayId);
-  setTextShaderParams(font->program, color);
-  setTexture(font->texture);
-
-  glDrawElements(GL_TRIANGLES, TEXT_MAX_LENGTH * 4, GL_UNSIGNED_INT, 0);
-}
-
-void updateQuadVertexArray(GLuint vertexArrayId, GLuint vertexBufferId, struct Vec2f32 xPositions, struct Vec2f32 yPositions)
-{
-  struct Vec2f32 viewXPositions = CREATE_VEC2f32(WORLDSPACEX_TO_VIEWSPACE(xPositions.x), WORLDSPACEX_TO_VIEWSPACE(xPositions.y));
-  struct Vec2f32 viewYPositions = CREATE_VEC2f32(WORLDSPACEY_TO_VIEWSPACE(xPositions.x), WORLDSPACEY_TO_VIEWSPACE(xPositions.y));
-
-  GLfloat        bufferData[20] = {
-      viewXPositions.pos[0], viewYPositions.pos[0], 0.0f, 0.0f, 1.0f, //
-      viewXPositions.pos[1], viewYPositions.pos[0], 0.0f, 1.0f, 1.0f, //
-      viewXPositions.pos[0], viewYPositions.pos[1], 0.0f, 0.0f, 0.0f, //
-      viewXPositions.pos[1], viewYPositions.pos[1], 0.0f, 1.0f, 0.0f  //
-  };
-  glBindVertexArray(vertexArrayId);
-  glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId);
-  glBufferData(GL_ARRAY_BUFFER, 20 * sizeof(GLfloat), bufferData, GL_STATIC_DRAW);
-
-  glBindVertexArray(0);
-}
-
-void createQuadVertexArray(GLuint* vertexArrayId, GLuint* vertexBufferId, struct Vec2f32 xPositions, struct Vec2f32 yPositions)
-{
-  struct Vec2f32 viewXPositions = CREATE_VEC2f32(WORLDSPACEX_TO_VIEWSPACE(xPositions.x), WORLDSPACEX_TO_VIEWSPACE(xPositions.y));
-  struct Vec2f32 viewYPositions = CREATE_VEC2f32(WORLDSPACEY_TO_VIEWSPACE(yPositions.x), WORLDSPACEY_TO_VIEWSPACE(yPositions.y));
-
-  GLfloat        bufferData[20] = {
-      viewXPositions.pos[0], viewYPositions.pos[0], 0.0f, 0.0f, 1.0f, //
-      viewXPositions.pos[1], viewYPositions.pos[0], 0.0f, 1.0f, 1.0f, //
-      viewXPositions.pos[0], viewYPositions.pos[1], 0.0f, 0.0f, 0.0f, //
-      viewXPositions.pos[1], viewYPositions.pos[1], 0.0f, 1.0f, 0.0f  //
-  };
-  int    indices[6] = {0, 1, 2, 1, 3, 2};
-
-  GLuint indexBufferId;
-
-  glGenVertexArrays(1, vertexArrayId);
-  glBindVertexArray(*vertexArrayId);
-
-  glGenBuffers(1, vertexBufferId);
-  glBindBuffer(GL_ARRAY_BUFFER, *vertexBufferId);
-  glBufferData(GL_ARRAY_BUFFER, 20 * sizeof(GLfloat), bufferData, GL_STATIC_DRAW);
-
-  glEnableVertexAttribArray(0);
-  glEnableVertexAttribArray(1);
-
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, 0);
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, (signed char*)NULL + (3 * sizeof(GLfloat)));
-
-  glGenBuffers(1, &indexBufferId);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferId);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(GLuint), indices, GL_STATIC_DRAW);
-
-  glBindVertexArray(0);
-}
-
-static void createAndCompileShader(GLuint* shaderId, int glShaderMacro, const char* fileName)
-{
-  char* buffer;
-  int   len;
-  read_file(&buffer, &len, fileName);
-  *shaderId = glCreateShader(glShaderMacro);
-  glShaderSource(*shaderId, 1, &buffer, NULL);
-
-  glCompileShader(*shaderId);
-
-#if DEBUG_SDL
-  int status;
-  glGetShaderiv(*shaderId, GL_COMPILE_STATUS, &status);
-  if (status != 1)
-  {
-    int logSize;
-
-    glGetShaderiv(*shaderId, GL_INFO_LOG_LENGTH, &logSize);
-    logSize++;
-    char infoLog[logSize];
-    infoLog[logSize - 1] = '\0';
-
-    glGetShaderInfoLog(*shaderId, logSize, NULL, infoLog);
-    printf("Failed to compile shader '%s'\n", fileName);
-    printf("%s\n", infoLog);
-  }
-  else
-  {
-    printf("Compiled shader '%s'\n", fileName);
-  }
-#endif
-
-  free(buffer);
-}
-
-static inline void createAndCompileVertexShader(GLuint* shaderId, const char* fileName)
-{
-  createAndCompileShader(shaderId, GL_VERTEX_SHADER, fileName);
-}
-
-static inline void createAndCompileFragmentShader(GLuint* shaderId, const char* fileName)
-{
-  createAndCompileShader(shaderId, GL_FRAGMENT_SHADER, fileName);
-}
-
-void createTextBuffers(GLuint* vertexArrayId, GLuint* vertexBufferId)
-{
-  GLuint indexBufferId;
-
-  int    vertexCount = TEXT_MAX_LENGTH * 4;
-  GLuint indices[TEXT_MAX_LENGTH * 6];
-  for (int i = 0, idx = 0; idx < TEXT_MAX_LENGTH * 6; idx += 6, i += 4)
-  {
-    indices[idx + 0] = i + 0;
-    indices[idx + 1] = i + 1;
-    indices[idx + 2] = i + 2;
-    indices[idx + 3] = i + 0;
-    indices[idx + 4] = i + 3;
-    indices[idx + 5] = i + 1;
-  }
-
-  GLfloat vertices[vertexCount];
-  for (int i = 0; i < vertexCount; i++)
-  {
-    vertices[i] = 0;
-  }
-
-  glGenVertexArrays(1, vertexArrayId);
-  glBindVertexArray(*vertexArrayId);
-
-  glGenBuffers(1, vertexBufferId);
-  glBindBuffer(GL_ARRAY_BUFFER, *vertexBufferId);
-  glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(GLfloat), vertices, GL_DYNAMIC_DRAW);
-
-  glEnableVertexAttribArray(0);
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(GLfloat) * 5, 0);
-
-  // Specify the location and format of the texture coordinate portion of the vertex buffer.
-  glVertexAttribPointer(1, 2, GL_FLOAT, false, sizeof(GLfloat) * 5, (unsigned char*)NULL + (3 * sizeof(float)));
-
-  // Generate an ID for the index buffer.
-  glGenBuffers(1, &indexBufferId);
-
-  // Bind the index buffer and load the index data into it.
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferId);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, vertexCount * sizeof(unsigned int), indices, GL_STATIC_DRAW);
-
-  glBindVertexArray(0);
-}
-
-void createTextShaderProgram(GLuint* program)
-{
-  GLuint vShader, fShader;
-  createAndCompileVertexShader(&vShader, "shaders/font.vs");
-  createAndCompileFragmentShader(&fShader, "shaders/font.ps");
-
-  *program = glCreateProgram();
-  glAttachShader(*program, vShader);
-  glAttachShader(*program, fShader);
-
-  glBindAttribLocation(*program, 0, "inputPosition");
-  glBindAttribLocation(*program, 1, "inputTexCoord");
-
-  glLinkProgram(*program);
-
-#if DEBUG_SDL
-  int status;
-  glGetProgramiv(*program, GL_LINK_STATUS, &status);
-  if (status != 1)
-  {
-    int logSize;
-
-    glGetProgramiv(*program, GL_INFO_LOG_LENGTH, &logSize);
-    logSize++;
-
-    char infoLog[logSize];
-    infoLog[logSize - 1] = '\0';
-
-    glGetProgramInfoLog(*program, logSize, NULL, infoLog);
-    printf("Failed to link program '%d'\n", *program);
-    printf("%s\n", infoLog);
-    exit(1);
-  }
-  else
-  {
-    printf("Linked program %d\n", *program);
-  }
-#endif
-}
-
-// ToDO clean this up to be one function
-void createTextureShaderProgram(GLuint* program)
-{
-  GLuint vShader, fShader;
-  createAndCompileVertexShader(&vShader, "shaders/texture.vs");
-  createAndCompileFragmentShader(&fShader, "shaders/texture.ps");
-
-  *program = glCreateProgram();
-  glAttachShader(*program, vShader);
-  glAttachShader(*program, fShader);
-
-  glBindAttribLocation(*program, 0, "inputPosition");
-  glBindAttribLocation(*program, 1, "inputTexCoord");
-
-  glLinkProgram(*program);
-#if DEBUG_SDL
-  int status;
-  glGetProgramiv(*program, GL_LINK_STATUS, &status);
-  if (status != 1)
-  {
-    int logSize;
-
-    glGetProgramiv(*program, GL_INFO_LOG_LENGTH, &logSize);
-    logSize++;
-
-    char infoLog[logSize];
-    infoLog[logSize - 1] = '\0';
-
-    glGetProgramInfoLog(*program, logSize, NULL, infoLog);
-    printf("Failed to link program '%d'\n", *program);
-    printf("%s\n", infoLog);
-    exit(1);
-  }
-#endif
-}
-
-void renderQuad(GLuint program, GLuint vertexArrayId, struct Image image)
-{
-  glUseProgram(program);
-  glBindVertexArray(vertexArrayId);
-
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, 0);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data);
-
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
-  glGenerateMipmap(GL_TEXTURE_2D);
-
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-  glBindVertexArray(0);
-}
-
-void renderUnfilledQuad(GLuint program, GLuint vertexArrayId, struct Vec3f32 color)
-{
-  glUseProgram(program);
-  glBindVertexArray(vertexArrayId);
-
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-  glBindVertexArray(0);
-}
-
-SDL_Window* initSDLWindow(SDL_GLContext* context, int screenWidth, int screenHeight)
-{
-  SDL_Window* window;
 
   SDL_Init(SDL_INIT_VIDEO);
-  window   = SDL_CreateWindow("client", 0, 0, screenWidth, screenHeight, SDL_WINDOW_OPENGL);
-  *context = SDL_GL_CreateContext(window);
+  *window  = SDL_CreateWindow("client", 0, 0, screenWidth, screenHeight, SDL_WINDOW_OPENGL);
+  *context = SDL_GL_CreateContext(*window);
 
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-#if VSYNC
-  SDL_GL_SetSwapInterval(1);
-#else
   SDL_GL_SetSwapInterval(0);
-#endif
 
   loadExtensions();
 
-  return window;
-}
-
-void TurnZBufferOn()
-{
-  // Enable depth testing.
-  glEnable(GL_DEPTH_TEST);
-}
-void TurnZBufferOff()
-{
-  // Disable depth testing.
-  glDisable(GL_DEPTH_TEST);
-}
-
-void EnableAlphaBlending()
-{
-  // Enable alpha blending.
   glEnable(GL_BLEND);
-
-  // Set the blending equation.
-  glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glViewport(0, 0, screenWidth, screenHeight);
 }
-void DisableAlphaBlending()
+
+void sta_updateWindowSizeSDL(SDL_Window* window, i32 width, i32 height)
 {
-  // Disable alpha blending.
-  glDisable(GL_BLEND);
+  SDL_SetWindowSize(window, width, height);
+  glViewport(0, 0, width, height);
 }

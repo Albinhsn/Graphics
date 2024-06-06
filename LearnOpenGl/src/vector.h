@@ -1,126 +1,169 @@
-#ifndef VECTOR_H
-#define VECTOR_H
+#ifndef STA_VECTOR
+#define STA_VECTOR
 
 #include "common.h"
-
-#define CREATE_VEC2i32(x, y)       ((struct Vec2i32){x, y})
-#define CREATE_VEC3i32(x, y, z)    ((struct Vec3i32){x, y, z})
-#define CREATE_VEC4i32(x, y, z, w) ((struct Vec4i32){x, y, z, w})
-
-#define CREATE_VEC2f32(x, y)       ((struct Vec2f32){x, y})
-#define CREATE_VEC3f32(x, y, z)    ((struct Vec3f32){x, y, z})
-#define CREATE_VEC4f32(x, y, z, w) ((struct Vec4f32){x, y, z, w})
-
-struct Vec4f32
+class Mat33
 {
+public:
   union
   {
-    f32 pos[4];
-    struct
-    {
-      f32 x;
-      f32 y;
-      f32 z;
-      f32 w;
-    };
-    struct
-    {
-      f32 r;
-      f32 g;
-      f32 b;
-      f32 a;
-    };
+    float m[9];
+    float rc[3][3];
   };
-};
-typedef struct Vec4f32 Vec4f32;
 
-struct Vec3f32
+  float determinant();
+  Mat33 inverse();
+};
+class Mat22
 {
+public:
   union
   {
-    f32 pos[3];
-    struct
-    {
-      f32 x;
-      f32 y;
-      f32 z;
-    };
-    struct
-    {
-      f32 r;
-      f32 g;
-      f32 b;
-    };
+    float m[4];
+    float rc[2][2];
   };
-};
-typedef struct Vec3f32 Vec3f32;
 
-struct Vec2f32
+  float determinant();
+  Mat22 inverse();
+};
+
+class Vector2
 {
+public:
+  float          x;
+  float          y;
+  float          len();
+  float          dot(Vector2 v);
+  float          dot_perp(Vector2 v);
+  Vector2        cross(Vector2 v);
+  void           scale(float s);
+  Vector2        sub(Vector2 v);
+  static Vector2 cross(Vector2 v0, Vector2 v1);
+};
+
+class Vector3
+{
+public:
+  Vector3(f32 x, f32 y, f32 z)
+  {
+    this->x = x;
+    this->y = y;
+    this->z = z;
+  }
   union
   {
-    f32 pos[2];
     struct
     {
-      f32 x;
-      f32 y;
+      float x;
+      float y;
+      float z;
     };
+    float v[3];
   };
-};
-typedef struct Vec2f32 Vec2f32;
 
-struct Vec2i32
+  float          len();
+  float          dot(Vector3 v);
+  Vector3        cross(Vector3 v);
+  void           scale(float s);
+  Vector3        sub(Vector3 v);
+  static Vector3 cross(Vector3 v0, Vector3 v1);
+};
+
+class Vector4
 {
+public:
+  Vector4()
+  {
+  }
+  Vector4(f32 x, f32 y, f32 z, f32 w)
+  {
+    this->x = x;
+    this->y = y;
+    this->z = z;
+    this->w = w;
+  }
   union
   {
-    i32 pos[2];
     struct
     {
-      i32 x;
-      i32 y;
+      float x;
+      float y;
+      float z;
+      float w;
     };
+    float v[4];
   };
-};
-typedef struct Vec2i32 Vec2i32;
 
-struct Vec3i32
-{
-  i32 x, y, z;
+  float          len();
+  float          dot(Vector4 v);
+  Vector4        cross(Vector4 v);
+  void           scale(float s);
+  Vector4        sub(Vector4 v);
+  static Vector4 cross(Vector4 v0, Vector4 v1);
 };
-typedef struct Vec3i32 Vec3i32;
-
-struct Vec4i32
+class Mat44
 {
-  i32 x, y, z, w;
-};
-typedef struct Vec4i32 Vec4i32;
-
-struct Vec2i8
-{
+public:
   union
   {
-    i8 pos[2];
-    struct
-    {
-      i8 x;
-      i8 y;
-    };
+    float m[16];
+    float rc[4][4];
   };
-};
-typedef struct Vec2i8 Vec2i8;
 
-struct Vec2u8
-{
-  union
-  {
-    u8 pos[2];
-    struct
-    {
-      u8 x;
-      u8 y;
-    };
-  };
+  float   determinant();
+  Mat44   mul(Mat44 m);
+  Vector4 mul(Vector4 v);
+  Mat44   inverse();
+  void    identity();
+  Mat44   translate(Vector3 v);
+  Mat44   scale(Vector3 v);
+  Mat44   rotate_x(f32 r);
+  Mat44   rotate_y(f32 r);
+  Mat44   rotate_z(f32 r);
+  void    perspective(f32 fov, f32 screen_aspect, f32 screen_near, f32 screen_depth);
+  void    orthographic(f32 screen_width, f32 screen_height, f32 screen_near, f32 screen_depth);
 };
-typedef struct Vec2u8 Vec2u8;
+
+typedef Vector2 Point2;
+typedef Vector3 Point3;
+
+struct Color
+{
+  float r;
+  float g;
+  float b;
+  float a;
+};
+struct ColorU8
+{
+  u8 r;
+  u8 g;
+  u8 b;
+  u8 a;
+};
+
+class ConvexHull2D
+{
+public:
+  Point2*             points;
+  int                 count;
+  int                 cap;
+  static ConvexHull2D create_andrew(Point2* points, int point_count);
+  static ConvexHull2D create_quick(Point2* points, int point_count);
+};
+
+float orient2d(Point2 a, Point2 b, Point2 c);
+float orient3d(Point3 a, Point3 b, Point3 c);
+float in_circle2d(Point2 a, Point2 b, Point2 c, Point2 d);
+float in_sphere(Point3 a, Point3 b, Point3 c, Point3 d, Point3 e);
+
+#define BLACK                                                                                                                                                                                          \
+  {                                                                                                                                                                                                    \
+    0, 0, 0, 0                                                                                                                                                                                         \
+  }
+#define WHITE                                                                                                                                                                                          \
+  {                                                                                                                                                                                                    \
+    1.0f, 1.0f, 1.0f, 1.0f                                                                                                                                                                             \
+  }
 
 #endif
