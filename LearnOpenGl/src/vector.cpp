@@ -14,10 +14,10 @@ Mat44 Mat44::rotate_x(f32 degrees)
   Mat44 m = {};
   m.identity();
   m.rc[1][1] = cosf(r);
-  m.rc[1][2] = sinf(r);
-  m.rc[2][1] = -sinf(r);
+  m.rc[1][2] = -sinf(r);
+  m.rc[2][1] = sinf(r);
   m.rc[2][2] = cosf(r);
-  return m.mul(*this);
+  return this->mul(m);
 }
 
 Mat44 Mat44::scale(Vector3 v)
@@ -28,7 +28,7 @@ Mat44 Mat44::scale(Vector3 v)
   m.rc[2][2] = v.z;
   m.rc[3][3] = 1.0f;
 
-  return m.mul(*this);
+  return this->mul(m);
 }
 Mat44 Mat44::rotate_y(f32 degrees)
 {
@@ -39,7 +39,7 @@ Mat44 Mat44::rotate_y(f32 degrees)
   m.rc[0][2] = -sinf(r);
   m.rc[2][0] = sinf(r);
   m.rc[2][2] = cosf(r);
-  return m.mul(*this);
+  return this->mul(m);
 }
 
 void Mat44::debug()
@@ -82,35 +82,11 @@ void Mat44::perspective(f32 fov, f32 screen_aspect, f32 screen_near, f32 screen_
   this->rc[2][0] = 0.0f;
   this->rc[2][1] = 0.0f;
   this->rc[2][2] = -((f + n) / (f - n));
-  this->rc[2][3] = -1.0f;
+  this->rc[2][3] = -(2.0f * ((f * n) / (f - n)));
 
   this->rc[3][0] = 0.0f;
   this->rc[3][1] = 0.0f;
-  this->rc[3][2] = -(2.0f * ((f * n) / (f - n)));
-  this->rc[3][3] = 0.0f;
-}
-
-void Mat44::orthographic(f32 screen_width, f32 screen_height, f32 screen_near, f32 screen_depth)
-{
-
-  this->rc[0][0] = 0.5f * screen_width;
-  this->rc[0][1] = 0.0f;
-  this->rc[0][2] = 0.0f;
-  this->rc[0][3] = 0.0f;
-
-  this->rc[1][0] = 0.0f;
-  this->rc[1][1] = 0.5f * screen_height;
-  this->rc[1][2] = 0.0f;
-  this->rc[1][3] = 0.0f;
-
-  this->rc[2][0] = 0.0f;
-  this->rc[2][1] = 0.0f;
-  this->rc[2][2] = 1.0f / (screen_depth - screen_near);
-  this->rc[2][3] = 1.0f;
-
-  this->rc[3][0] = 0.0f;
-  this->rc[3][1] = 0.0f;
-  this->rc[3][2] = screen_near / (screen_near - screen_depth);
+  this->rc[3][2] = -1.0f;
   this->rc[3][3] = 0.0f;
 }
 
@@ -123,7 +99,7 @@ Mat44 Mat44::mul(Mat44 m)
     {
       for (int k = 0; k < 4; k++)
       {
-        res.rc[i][j] += this->rc[i][k] * m.rc[k][j];
+        res.rc[i][j] += this->rc[k][j] * m.rc[i][k];
       }
     }
   }
@@ -136,8 +112,8 @@ Mat44 Mat44::rotate_z(f32 degrees)
   Mat44 m    = {};
 
   m.rc[0][0] = cosf(r);
-  m.rc[0][1] = sinf(r);
-  m.rc[1][0] = -sinf(r);
+  m.rc[0][1] = -sinf(r);
+  m.rc[1][0] = sinf(r);
   m.rc[1][1] = cosf(r);
   m.rc[2][2] = 1;
   m.rc[3][3] = 1;
@@ -158,27 +134,40 @@ Vector4 Mat44::mul(Vector4 v)
   return res;
 }
 
+Mat44 Mat44::transpose()
+{
+  Mat44 out = {};
+  for (int i = 0; i < 4; i++)
+  {
+    for (int j = 0; j < 4; j++)
+    {
+      out.rc[i][j] = this->rc[j][i];
+    }
+  }
+  return out;
+}
+
 Mat44 Mat44::look_at(Vector3 x, Vector3 y, Vector3 z)
 {
   Mat44 out    = {};
   out.rc[0][0] = x.x;
-  out.rc[1][0] = x.y;
-  out.rc[2][0] = x.z;
-  out.rc[3][0] = 0.0f;
+  out.rc[0][1] = x.y;
+  out.rc[0][2] = x.z;
+  out.rc[0][3] = 0.0f;
 
-  out.rc[0][1] = y.x;
+  out.rc[1][0] = y.x;
   out.rc[1][1] = y.y;
-  out.rc[2][1] = y.z;
-  out.rc[3][1] = 0.0f;
+  out.rc[1][2] = y.z;
+  out.rc[1][3] = 0.0f;
 
-  out.rc[0][2] = z.x;
-  out.rc[1][2] = z.y;
+  out.rc[2][0] = z.x;
+  out.rc[2][1] = z.y;
   out.rc[2][2] = z.z;
-  out.rc[3][2] = 0.0f;
+  out.rc[2][3] = 0.0f;
 
-  out.rc[3][0] = 0.0f;
-  out.rc[3][1] = 0.0f;
-  out.rc[3][2] = 0.0f;
+  out.rc[0][3] = 0.0f;
+  out.rc[1][3] = 0.0f;
+  out.rc[2][3] = 0.0f;
   out.rc[3][3] = 1.0f;
 
   return out;
@@ -189,9 +178,9 @@ Mat44 Mat44::translate(Vector3 v)
   Mat44 m = {};
   m.identity();
 
-  m.rc[3][0] = v.x;
-  m.rc[3][1] = v.y;
-  m.rc[3][2] = v.z;
+  m.rc[0][3] = v.x;
+  m.rc[1][3] = v.y;
+  m.rc[2][3] = v.z;
 
   return this->mul(m);
 }

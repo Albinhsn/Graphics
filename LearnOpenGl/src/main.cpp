@@ -131,6 +131,8 @@ int main()
     sta_glBindTexture(GL_TEXTURE_2D, texture1);
     sta_glBindVertexArray(vao);
 
+    // Mat44 view_t = view.transpose();
+    // Mat44 proj_t = proj.transpose();
     shader.set_mat4("view", &view.m[0]);
     shader.set_mat4("projection", &proj.m[0]);
 
@@ -139,6 +141,7 @@ int main()
       Mat44 trans = {};
       trans.identity();
       trans = trans.translate(cubePositions[i]);
+      // Mat44 trans_t = trans.transpose();
       shader.set_mat4("model", &trans.m[0]);
       glDrawArrays(GL_TRIANGLES, 0, 36);
     }

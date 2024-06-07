@@ -113,6 +113,7 @@ public:
   void         debug();
   float        determinant();
   static Mat44 look_at(Vector3 x, Vector3 y, Vector3 z);
+    Mat44 transpose();
   Mat44        mul(Mat44 m);
   Vector4      mul(Vector4 v);
   Mat44        inverse();
