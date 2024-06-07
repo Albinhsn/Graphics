@@ -1,4 +1,5 @@
 #include "vector.h"
+#include "common.h"
 #include <cmath>
 #include <cstring>
 
@@ -9,14 +10,14 @@ float Mat22::determinant()
 
 Mat44 Mat44::rotate_x(f32 degrees)
 {
-  float r = degrees * PI / 180.0f;
+  float r = DEGREES_TO_RADIANS(degrees);
   Mat44 m = {};
   m.identity();
   m.rc[1][1] = cosf(r);
   m.rc[1][2] = sinf(r);
   m.rc[2][1] = -sinf(r);
   m.rc[2][2] = cosf(r);
-  return this->mul(m);
+  return m.mul(*this);
 }
 
 Mat44 Mat44::scale(Vector3 v)
@@ -27,41 +28,66 @@ Mat44 Mat44::scale(Vector3 v)
   m.rc[2][2] = v.z;
   m.rc[3][3] = 1.0f;
 
-  return this->mul(m);
+  return m.mul(*this);
 }
 Mat44 Mat44::rotate_y(f32 degrees)
 {
-  float r = degrees * PI / 180.0f;
+  float r = DEGREES_TO_RADIANS(degrees);
   Mat44 m = {};
   m.identity();
   m.rc[0][0] = cosf(r);
   m.rc[0][2] = -sinf(r);
   m.rc[2][0] = sinf(r);
   m.rc[2][2] = cosf(r);
-  return this->mul(m);
+  return m.mul(*this);
 }
 
+void Mat44::debug()
+{
+  for (int i = 0; i < 4; i++)
+  {
+    for (int j = 0; j < 4; j++)
+    {
+      printf("%f", this->rc[i][j]);
+      if (j < 3)
+      {
+        printf(", ");
+      }
+      else
+      {
+      }
+    }
+    printf("\n");
+  }
+}
 void Mat44::perspective(f32 fov, f32 screen_aspect, f32 screen_near, f32 screen_depth)
 {
-  this->rc[0][0] = 1.0f / (screen_aspect * tanf(fov * 0.5f));
+  fov            = DEGREES_TO_RADIANS(fov);
+  float c        = 1.0f / (tan(fov * 0.5f));
+  float a        = screen_aspect;
+
+  float f        = screen_depth;
+  float n        = screen_near;
+
+  this->rc[0][0] = c / a;
   this->rc[0][1] = 0.0f;
   this->rc[0][2] = 0.0f;
   this->rc[0][3] = 0.0f;
 
   this->rc[1][0] = 0.0f;
-  this->rc[1][1] = 1.0f / tanf(fov * 0.5f);
+  this->rc[1][1] = c;
   this->rc[1][2] = 0.0f;
   this->rc[1][3] = 0.0f;
 
   this->rc[2][0] = 0.0f;
   this->rc[2][1] = 0.0f;
-  this->rc[2][2] = screen_depth / (screen_depth - screen_near);
-  this->rc[2][3] = 1.0f;
+  this->rc[2][2] = -((f + n) / (f - n));
+  this->rc[2][3] = -1.0f;
 
   this->rc[3][0] = 0.0f;
   this->rc[3][1] = 0.0f;
-  this->rc[3][2] = (-screen_near * screen_depth) / (screen_depth - screen_near);
-  this->rc[3][3]  = 0.0f;
+  this->rc[3][2] = -(2.0f * ((f * n) / (f - n)));
+  this->rc[3][3] = 0.0f;
 }
 
 void Mat44::orthographic(f32 screen_width, f32 screen_height, f32 screen_near, f32 screen_depth)
@@ -97,7 +123,7 @@ Mat44 Mat44::mul(Mat44 m)
     {
       for (int k = 0; k < 4; k++)
       {
-        res.rc[i][j] += m.rc[i][k] * this->rc[k][j];
+        res.rc[i][j] += this->rc[i][k] * m.rc[k][j];
       }
     }
   }
@@ -120,7 +146,7 @@ Mat44 Mat44::rotate_z(f32 degrees)
 }
 Vector4 Mat44::mul(Vector4 v)
 {
-  Vector4 res = {};
+  Vector4 res(0, 0, 0, 0);
   for (int i = 0; i < 4; i++)
   {
     res.x += this->rc[i][0] * v.x;

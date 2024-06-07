@@ -346,6 +346,7 @@ void sta_init_sdl_gl(SDL_Window** window, SDL_GLContext* context, int screenWidt
   loadExtensions();
 
   glEnable(GL_BLEND);
+  glEnable(GL_DEPTH_TEST);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glViewport(0, 0, screenWidth, screenHeight);
 }

@@ -110,6 +110,7 @@ public:
     float rc[4][4];
   };
 
+  void debug();
   float   determinant();
   Mat44   mul(Mat44 m);
   Vector4 mul(Vector4 v);
