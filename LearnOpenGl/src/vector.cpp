@@ -158,6 +158,32 @@ Vector4 Mat44::mul(Vector4 v)
   return res;
 }
 
+Mat44 Mat44::look_at(Vector3 x, Vector3 y, Vector3 z)
+{
+  Mat44 out    = {};
+  out.rc[0][0] = x.x;
+  out.rc[1][0] = x.y;
+  out.rc[2][0] = x.z;
+  out.rc[3][0] = 0.0f;
+
+  out.rc[0][1] = y.x;
+  out.rc[1][1] = y.y;
+  out.rc[2][1] = y.z;
+  out.rc[3][1] = 0.0f;
+
+  out.rc[0][2] = z.x;
+  out.rc[1][2] = z.y;
+  out.rc[2][2] = z.z;
+  out.rc[3][2] = 0.0f;
+
+  out.rc[3][0] = 0.0f;
+  out.rc[3][1] = 0.0f;
+  out.rc[3][2] = 0.0f;
+  out.rc[3][3] = 1.0f;
+
+  return out;
+}
+
 Mat44 Mat44::translate(Vector3 v)
 {
   Mat44 m = {};

@@ -110,19 +110,20 @@ public:
     float rc[4][4];
   };
 
-  void debug();
-  float   determinant();
-  Mat44   mul(Mat44 m);
-  Vector4 mul(Vector4 v);
-  Mat44   inverse();
-  void    identity();
-  Mat44   translate(Vector3 v);
-  Mat44   scale(Vector3 v);
-  Mat44   rotate_x(f32 r);
-  Mat44   rotate_y(f32 r);
-  Mat44   rotate_z(f32 r);
-  void    perspective(f32 fov, f32 screen_aspect, f32 screen_near, f32 screen_depth);
-  void    orthographic(f32 screen_width, f32 screen_height, f32 screen_near, f32 screen_depth);
+  void         debug();
+  float        determinant();
+  static Mat44 look_at(Vector3 x, Vector3 y, Vector3 z);
+  Mat44        mul(Mat44 m);
+  Vector4      mul(Vector4 v);
+  Mat44        inverse();
+  void         identity();
+  Mat44        translate(Vector3 v);
+  Mat44        scale(Vector3 v);
+  Mat44        rotate_x(f32 r);
+  Mat44        rotate_y(f32 r);
+  Mat44        rotate_z(f32 r);
+  void         perspective(f32 fov, f32 screen_aspect, f32 screen_near, f32 screen_depth);
+  void         orthographic(f32 screen_width, f32 screen_height, f32 screen_near, f32 screen_depth);
 };
 
 typedef Vector2 Point2;
