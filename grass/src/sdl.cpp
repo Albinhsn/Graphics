@@ -1,6 +1,9 @@
 #include "sdl.h"
 #include <GL/glext.h>
+#include <SDL2/SDL_video.h>
 
+PFNGLDISPATCHCOMPUTEPROC          glDispatchCompute          = NULL;
+PFNGLDRAWARRAYSINSTANCEDPROC      glDrawArraysInstanced      = NULL;
 PFNGLCREATESHADERPROC             glCreateShader             = NULL;
 PFNGLCOMPILESHADERPROC            glCompileShader            = NULL;
 PFNGLGETSHADERIVPROC              glGetShaderiv              = NULL;
@@ -70,6 +73,8 @@ PFNGLFRAMEBUFFERTEXTUREPROC       glFramebufferTexture       = NULL;
 
 void                              loadExtensions()
 {
+  glDispatchCompute          = (PFNGLDISPATCHCOMPUTEPROC)SDL_GL_GetProcAddress("glDispatchCompute");
+  glDrawArraysInstanced      = (PFNGLDRAWARRAYSINSTANCEDPROC)SDL_GL_GetProcAddress("glDrawArraysInstanced");
   glFramebufferTexture       = (PFNGLFRAMEBUFFERTEXTUREPROC)SDL_GL_GetProcAddress("glFramebufferTexture");
   glDrawElementsBaseVertex   = (PFNGLDRAWELEMENTSBASEVERTEXPROC)SDL_GL_GetProcAddress("glDrawElementsBaseVertex");
   glIsProgram                = (PFNGLISPROGRAMPROC)SDL_GL_GetProcAddress("glIsProgram");
