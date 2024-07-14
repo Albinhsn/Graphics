@@ -70,10 +70,14 @@ int main() {
 
   u32 ground_buffer = create_ground_buffer(&renderer);
 
-  Mat44 m = Mat44::identity();
+  Mat44 m = Mat44::identity().scale(0.8f);
+  Mat44 camera = Mat44::look_at(Vector3(0, -2, 1), Vector3(0, 0, 0), Vector3(0, 1, 0));
+  Mat44 projection = {};
+  projection.perspective(45.0f, screen_width / (f32)screen_height, 0.01f, 100.0f);
 
   ground_shader.set_mat4("model", m);
-  ground_shader.set_mat4("projection", m);
+  ground_shader.set_mat4("view", camera);
+  ground_shader.set_mat4("projection", projection);
 
   u32 ticks = 0;
   while (true) {
