@@ -79,7 +79,7 @@ int main()
 
   unsigned int texture0, texture1;
   sta_glGenTextures(1, &texture0);
-  sta_glBindTexture(GL_TEXTURE_2D, texture0);
+  sta_glBindTexture(GL_TEXTURE_CUBE_MAP, texture0);
 
   sta_glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data);
   sta_glGenerateMipmap(GL_TEXTURE_2D);
@@ -94,6 +94,7 @@ int main()
   Mat44  proj = {};
   proj.identity();
   proj.perspective(45.0f, screen_width / (f32)screen_height, 0.1f, 100.0f);
+  proj.debug();
 
   Mat44 view = {};
   view.identity();
@@ -106,6 +107,9 @@ int main()
   u32     ticks           = 0;
   Vector3 cubePositions[] = {Vector3(0.0f, 0.0f, 0.0f),   Vector3(2.0f, 5.0f, -15.0f), Vector3(-1.5f, -2.2f, -2.5f), Vector3(-3.8f, -2.0f, -12.3f), Vector3(2.4f, -0.4f, -3.5f),
                              Vector3(-1.7f, 3.0f, -7.5f), Vector3(1.3f, -2.0f, -2.5f), Vector3(1.5f, 2.0f, -2.5f),   Vector3(1.5f, 0.2f, -1.5f),    Vector3(-1.3f, 1.0f, -1.5f)};
+
+    printf("-\n");
+  view.debug();
   while (true)
   {
     if (process_input())
